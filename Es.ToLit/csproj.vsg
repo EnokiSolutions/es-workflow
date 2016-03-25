@@ -1,0 +1,8 @@
+{
+ "refs": [
+  "Newtonsoft.Json",
+  "nunit.framework",
+  "System",
+  "System.Core"
+ ]
+}

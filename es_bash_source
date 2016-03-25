@@ -1,0 +1,176 @@
+#!/bin/bash
+
+for f in $(compgen -A function | egrep "^_?es")
+do
+ unset -f $f
+done
+
+function _es-branch-prefix {
+  b=$1
+  rx="(([a-zA-Z]+[0-9]+)+)\."
+  if [[ $b =~ $rx ]]
+  then
+    echo ${BASH_REMATCH[1]}
+  else
+    echo $b
+  fi
+}
+
+function _es-is-project-branch {
+  b=$1
+  rx="^[a-zA-Z]+[0-9]+\." 
+  if [[ $b =~ $rx ]]
+  then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+function _es-git-root-dir {
+  d=$(pwd)
+  while :
+  do
+    if [ -d "${d}/.git" ]
+    then
+      echo $d
+      return
+    fi
+    d=$(dirname $d)
+    if [ "/" == "$d" ]
+    then
+      return
+    fi
+  done
+}
+
+function _es-update-minor-version {
+  v=$1
+  rx="^([0-9]+)\.([0-9]+)\.([0-9+])"
+  if [[ $v =~ $rx ]]
+  then
+    major=${BASH_REMATCH[1]}
+    minor=${BASH_REMATCH[2]}
+    patch=${BASH_REMATCH[3]}
+    minor=$(expr $minor + 1)
+    echo "$major.$minor.$patch"
+  fi
+}
+
+function _es-version-update {
+  cb=$(_es-current-branch)
+  pb=$(_es-is-project-branch $cb)
+  if [ $pb != 1 ]
+  then
+    return
+  fi
+  mv=$(git show master:version.txt)
+  mvu=$(_es-update-minor-version $mv)
+  if [ -z $mvu ]
+  then
+    return
+  fi
+  vfile="$(_es-git-root-dir)/version.txt"
+  v=$(cat $vfile)
+  if [ "$v" == "$mvu" ]
+  then
+    return
+  fi
+  echo $mvu > $vfile
+  git add $vfile
+  git commit -m"update version to $mvu"
+}
+
+
+function _es-branch-parent-prefix {
+  b=$1
+  rx="(([a-zA-Z]+[0-9]+)+)[a-zA-Z]+[0-9]+\." 
+  if [[ $b =~ $rx ]]
+  then
+    echo ${BASH_REMATCH[1]}
+  else
+    echo "master"
+  fi
+}
+
+function _es-current-branch {
+  cb=$(git branch | grep '*')
+  echo ${cb:2}
+}
+
+function _es-branches {
+  bs=$(git branch)
+  bs=${bs/\*/} # remove *
+  bs=${bs/  / } # compress spaces
+  bs=${bs/# /} # remove leading space
+  bs=${bs/% /} # remove trailing space
+  echo ${bs}
+}
+
+function _es-branch-for-prefix {
+  prefix="$1."
+  prefixLen=${#prefix}
+  for b in $(_es-branches)
+  do
+    if [ $prefix == ${b:0:$prefixLen} ]
+    then
+      echo $b
+      return
+    fi
+  done
+  echo "master"
+}
+
+function es-new-branch {
+  toCreate=$1
+  currentBranch=$(_es-current-branch)
+
+  prefix=$(_es-branch-prefix ${currentBranch})
+  parentPrefix=$(_es-branch-parent-prefix ${toCreate})
+
+  if [ ${prefix} != ${parentPrefix} ]
+  then
+    echo "switch to parent branch $(_es-branch-for-prefix ${parentPrefix}) before creating child branch"
+    return
+  fi
+
+  git fetch -p || return
+  git merge --ff-only origin/${currentBranch} ${currentBranch} || return
+  git branch ${toCreate} || return
+  git checkout ${toCreate} || return
+  _es-version-update
+  git push --set-upstream origin ${toCreate}
+}
+
+function es-merge-up {
+  toMergeUp=$(_es-branch-for-prefix $1)
+  currentBranch=$(_es-current-branch)
+
+  prefix=$(_es-branch-prefix ${currentBranch})
+  parentPrefix=$(_es-branch-parent-prefix ${toMergeUp})
+
+  if [ ${prefix} != ${parentPrefix} ]
+  then
+    echo "switch to parent branch ${parentPrefix} before merging up child branch"
+    return
+  fi
+
+  git fetch -p || return
+  git merge --ff-only origin/${currentBranch} ${currentBranch} || return
+  git merge --ff-only ${toMergeUp} || return
+  git push || return
+  git push origin :${toMergeUp} || return
+  git branch -d ${toMergeUp}
+}
+
+function es-merge-down {
+  currentBranch=$(_es-current-branch)
+  parentBranchPrefix=$(_es-branch-parent-prefix ${currentBranch})
+  parentBranch=$(_es-branch-for-prefix ${parentBranchPrefix})
+
+  git fetch -p || return
+  git merge --ff-only origin/${parentBranch} ${parentBranch} || return
+  git merge --ff-only origin/${currentBranch} ${currentBranch} || return
+  git merge ${parentBranch}
+  _es-version-update
+}

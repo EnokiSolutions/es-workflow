@@ -1,0 +1,8 @@
+{
+ "refs": [
+  "Newtonsoft.Json",
+  "Es.ToolsCommon",
+  "System",
+  "System.Core"
+ ]
+}

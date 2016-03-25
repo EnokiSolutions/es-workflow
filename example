@@ -1,0 +1,13 @@
++REPO  git@gitlab.rhi:testing/program.git
+-REPO
++REPO  git@gitlab.rhi:testing/library.git
++BRANCH  master 0.0.0
+{ "type":"library" }
+-BRANCH
++BRANCH  p1f1.test 0.1.1
+{ "type":"library" }
+-BRANCH
++BRANCH  p1.test 0.0.0
+{ "type":"library" }
+-BRANCH
+-REPO

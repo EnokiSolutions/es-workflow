@@ -1,0 +1,8 @@
+{
+ "name":"Es.Workflow",
+ "packages":[
+   ["NUnit","2.6.4"],
+   ["Newtonsoft.Json","8.0.3","net45"],
+ ]
+}
+

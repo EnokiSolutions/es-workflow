@@ -1,0 +1,8 @@
+{
+ "refs": [
+  "Es.Vsg",
+  "nunit.framework",
+  "System",
+  "System.Core"
+ ]
+}

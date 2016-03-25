@@ -1,0 +1,9 @@
+{
+ "refs": [
+  "Es.ToolsCommon",
+  "nunit.framework",
+  "Newtonsoft.Json",
+  "System",
+  "System.Core"
+ ]
+}

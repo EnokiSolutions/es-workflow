@@ -1,0 +1,8 @@
+{
+ "refs": [
+  "Es.Tcg",
+  "nunit.framework",
+  "System",
+  "System.Core"
+ ]
+}
