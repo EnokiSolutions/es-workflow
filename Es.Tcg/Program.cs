@@ -25,11 +25,11 @@ namespace Es.Tcg
             if (args.Length == 1)
                 textReader = File.OpenText(args[0]);
 
-            _privateKeyPath = Environment.GetEnvironmentVariable("TCG_PK");
+            _privateKeyPath = Environment.GetEnvironmentVariable("TCG_PK") ?? @"C:\TeamCityData\config\id_rsa";
             if (!Directory.Exists("_Root"))
             {
-                var tcgDir = Environment.GetEnvironmentVariable("TCG_DIR");
-                if (tcgDir != null && Directory.Exists(tcgDir))
+                var tcgDir = Environment.GetEnvironmentVariable("TCG_DIR") ?? @"C:\TeamCityData\config\projects\";
+                if (Directory.Exists(tcgDir))
                 {
                     Environment.CurrentDirectory = tcgDir;
                 }
