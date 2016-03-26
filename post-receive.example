@@ -21,7 +21,6 @@ if GitlabPostReceive.new(repo_path, key_id, refs).exec &&
     GitlabCustomHook.new.post_receive(refs, repo_path)
   # trigger watcher
   `echo -e"\n" | nc localhost 3333`
-
   exit 0
 else
   exit 1
