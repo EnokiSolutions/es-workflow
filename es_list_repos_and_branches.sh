@@ -1,7 +1,7 @@
 #!/bin/bash
 
 pushd /var/opt/gitlab/git-data/repositories > /dev/null
-gitlaburl="git@gitlab.rhi:"
+gitlaburl="git@gitlab.es:"
 
 function lsb {
   echo "+REPO " ${1/\.\//${gitlaburl}}
