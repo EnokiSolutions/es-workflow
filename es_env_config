@@ -1,0 +1,9 @@
+TEAMCITY_HOST=teamcity.es
+NUGET_HOST=nuget.es
+YOUTRACK_HOST=youtrack.es
+GITLAB_HOST=gitlab.es
+TCG_PK="C:\\TeamCityData\\config\\id_rsa"
+TCG_DIR="C:\\TeamCityData\\config\\projects"
+NUP_DIR="C:\\Es.Nup"
+UPD_DIR="C:\\Es.Upd"
+
