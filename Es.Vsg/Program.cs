@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using Es.ToolsCommon;
 using Newtonsoft.Json.Linq;
-using XxHashEx = Es.ToolsCommon.XxHashEx;
 
 namespace Es.Vsg
 {
@@ -293,12 +292,6 @@ using System.Runtime.InteropServices;
                     return;
             }
             File.WriteAllText(filename, contents);
-        }
-
-        public static T GetValue<T>(this JObject jObject, string path, T defaultValue)
-        {
-            var temp = jObject.SelectToken(path, false);
-            return temp == null ? defaultValue : temp.ToObject<T>();
         }
 
         private static void WriteSln(string slnFilename, IDictionary<string, Guid> csProjAndGuids)

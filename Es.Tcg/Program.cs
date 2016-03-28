@@ -461,12 +461,6 @@ namespace Es.Tcg
 
             File.WriteAllText(Path.Combine(vcsRootsDir, outputDir + ".xml"), sb.ToString());
         }
-
-        private static T GetValue<T>(this JObject jObject, string path, T defaultValue)
-        {
-            var temp = jObject.SelectToken(path, false);
-            return temp == null ? defaultValue : temp.ToObject<T>();
-        }
     }
 
     [TestFixture]
