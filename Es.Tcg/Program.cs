@@ -420,7 +420,7 @@ namespace Es.Tcg
         }
 
         static readonly Regex RxBranchPrefix = new Regex(@"^((?:[a-zA-Z]+[0-9]+)+)\.", RegexOptions.Compiled);
-        static readonly Regex RxBranchParentPrefix = new Regex(@"^((?:[a-zA-Z]+[0-9]+)+)[a-zA-Z]+[0-9]+\.", RegexOptions.Compiled);
+        static readonly Regex RxBranchParentPrefix = new Regex(@"^[a-zA-Z]+[0-9]+((?:[a-zA-Z]+[0-9]+)+)\.", RegexOptions.Compiled);
 
         internal static string BranchPrefix(string branch)
         {
