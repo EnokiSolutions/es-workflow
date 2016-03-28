@@ -82,6 +82,8 @@ namespace Es.Vsg
             File.WriteAllText(
                 Path.Combine(csProjDir,"BuildInfo.cs"),
                 $@"//generated code do not edit
+// ReSharper disable UnusedMember.Local
+// ReSharper disable UnusedMember.Global
 namespace {csProjDir}
 {{
     internal static class BuildInfo
