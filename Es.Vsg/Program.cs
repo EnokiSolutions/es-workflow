@@ -16,7 +16,7 @@ namespace Es.Vsg
         private const string VersionFilename = "version.txt";
         private const string DefaultVersion = "0.0.0";
 
-        private const int WaitTimeMilliseconds = 5000;
+        private const int WaitTimeMilliseconds = 60000;
         private static string _nugetExe;
         private static string _ilMergeExe;
 
