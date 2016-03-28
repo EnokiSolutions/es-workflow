@@ -4,6 +4,7 @@
 # vsg will create these
 *.sln
 *.csproj
+BuildInfo.cs
 
 # User-specific files
 *.suo

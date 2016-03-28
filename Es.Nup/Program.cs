@@ -43,6 +43,8 @@ nuspec file
 
         public static void Main(string[] args)
         {
+            Console.WriteLine("Es.Nup {0}", BuildInfo.Version);
+
             if (args.Length < 1)
                 return;
 

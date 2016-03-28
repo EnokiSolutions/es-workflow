@@ -20,7 +20,7 @@ namespace Es.Tcg
 
         public static void Main(string[] args)
         {
-            Console.Out.WriteLine("Es.Tcg version 0.4.0");
+            Console.Out.WriteLine("Es.Tcg {0}",BuildInfo.Version);
             var textReader = Console.In;
             if (args.Length == 1)
                 textReader = File.OpenText(args[0]);
