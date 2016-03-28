@@ -1,7 +1,5 @@
 #!/bin/bash
 
-TEAMCITY_HOST=teamcity.es
-
 trap ctrl_c INT
 function ctrl_c() {
   pkill nc

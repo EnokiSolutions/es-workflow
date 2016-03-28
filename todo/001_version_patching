@@ -1,0 +1,1 @@
+Write out a Version.cs file with a static internal class containing the version as a SemVer
