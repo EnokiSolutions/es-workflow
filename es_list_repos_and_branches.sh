@@ -26,7 +26,7 @@ function lsb {
   popd > /dev/nul
 }
 
-for repo in $(find . -type d -name '*.git' -not -name '*.wiki.git')
+for repo in $(find . -type d -name '*.git' -not -name '*.wiki.git' -not -name '*\+deleted*')
 do
   lsb $repo
 done
