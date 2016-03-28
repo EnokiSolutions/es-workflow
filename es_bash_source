@@ -84,7 +84,7 @@ function _wf-version-update {
 
 function _wf-branch-parent-prefix {
   b=$1
-  rx="(([a-zA-Z]+[0-9]+)+)[a-zA-Z]+[0-9]+\." 
+  rx="^[a-zA-Z]+[0-9]+(([a-zA-Z]+[0-9]+)+)\." 
   if [[ $b =~ $rx ]]
   then
     echo ${BASH_REMATCH[1]}

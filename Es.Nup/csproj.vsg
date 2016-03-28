@@ -3,6 +3,6 @@
   "Newtonsoft.Json",
   "System",
   "System.Core",
-  "CH.Spawner"
+  "Es.ToolsCommon"
  ]
 }

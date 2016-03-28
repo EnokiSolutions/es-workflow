@@ -62,4 +62,6 @@ For example: `core1.lemon` would be the first project for the `core` team given 
 
 Feature branches match `/^[a-zA-Z]+[0-9]+[a-zA-Z]+[0-9]+\./`. The same as a project branch with more more tag and number. This is usually `f` and the ticket number of the feature. Feature numbers are unique across a team (not per project).
 
-For example: `core1f1.update_readme` would be the branch for working on ticket 1 or the core team.
+For example: `f1core1.update_readme` would be the branch for working on ticket 1 or the core team.
+
+You can continue to prepend tag# to the branch to create more child branches (x1f1core1 for an experiment in feature 1 or project core 1). Generally two levels is enough for most people though.

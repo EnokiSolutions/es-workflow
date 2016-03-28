@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using Es.ToolsCommon;
 using Newtonsoft.Json.Linq;
-using XxHashEx = Es.ToolsCommon.XxHashEx;
 
 namespace Es.Vsg
 {
@@ -13,14 +12,17 @@ namespace Es.Vsg
     {
         private const string SlnVsgFilename = "sln.vsg";
         private const string CsprojVsgFilename = "csproj.vsg";
+        private const string VersionFilename = "version.txt";
+        private const string DefaultVersion = "0.0.0";
 
-        private const int WaitTimeMilliseconds = 5000;
+        private const int WaitTimeMilliseconds = 60000;
         private static string _nugetExe;
         private static string _ilMergeExe;
 
         public static void Main(string[] args)
         {
-            Console.WriteLine("Es.Vsg V0.4.0");
+            Console.WriteLine("Es.Vsg {0}",BuildInfo.Version);
+
             if (!File.Exists(SlnVsgFilename))
             {
                 Console.WriteLine("Current working directory {1} must have a {0} file", SlnVsgFilename,
@@ -51,6 +53,10 @@ namespace Es.Vsg
             UpdatePackages(packageInfos);
             var packagesDllMap = ScanPackages(packageInfos);
 
+            var version = DefaultVersion;
+            if (File.Exists(VersionFilename))
+                version = File.ReadAllLines(VersionFilename).FirstOrDefault()??DefaultVersion;
+
             var csProjAndGuids = new Dictionary<string, Guid>(StringComparer.CurrentCultureIgnoreCase);
             foreach (
                 var dir in
@@ -61,12 +67,30 @@ namespace Es.Vsg
             {
                 csProjAndGuids[dir] = ToGuid(dir);
             }
+            
 
             foreach (var csProjAndGuid in csProjAndGuids)
             {
+                WriteVersionFile(version, csProjAndGuid.Key);
                 WriteCsProjAndAssemblyInfo(csProjAndGuid, csProjAndGuids, packagesDllMap);
             }
             WriteSln(slnFilename, csProjAndGuids);
+        }
+
+        private static void WriteVersionFile(string version, string csProjDir)
+        {
+            File.WriteAllText(
+                Path.Combine(csProjDir,"BuildInfo.cs"),
+                $@"//generated code do not edit
+// ReSharper disable UnusedMember.Local
+// ReSharper disable UnusedMember.Global
+namespace {csProjDir}
+{{
+    internal static class BuildInfo
+    {{
+        public const string Version=""{version}"";
+    }}
+}}");
         }
 
         private static void WriteCsProjAndAssemblyInfo(KeyValuePair<string, Guid> csProjAndGuid,
@@ -270,12 +294,6 @@ using System.Runtime.InteropServices;
                     return;
             }
             File.WriteAllText(filename, contents);
-        }
-
-        public static T GetValue<T>(this JObject jObject, string path, T defaultValue)
-        {
-            var temp = jObject.SelectToken(path, false);
-            return temp == null ? defaultValue : temp.ToObject<T>();
         }
 
         private static void WriteSln(string slnFilename, IDictionary<string, Guid> csProjAndGuids)

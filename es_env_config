@@ -1,9 +1,8 @@
-TEAMCITY_HOST=teamcity.es
-NUGET_HOST=nuget.es
-YOUTRACK_HOST=youtrack.es
-GITLAB_HOST=gitlab.es
-TCG_PK="C:\\TeamCityData\\config\\id_rsa"
-TCG_DIR="C:\\TeamCityData\\config\\projects"
-NUP_DIR="C:\\Es.Nup"
-UPD_DIR="C:\\Es.Upd"
-
+export TEAMCITY_HOST=teamcity.es
+export NUGET_HOST=nuget.es
+export YOUTRACK_HOST=youtrack.es
+export GITLAB_HOST=gitlab.es
+export TCG_PK="C:\\TeamCityData\\config\\id_rsa"
+export TCG_DIR="C:\\TeamCityData\\config\\projects"
+export NUP_DIR="C:\\Es.Nup"
+export UPD_DIR="C:\\Es.Upd"

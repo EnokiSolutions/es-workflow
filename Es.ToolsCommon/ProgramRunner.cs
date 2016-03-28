@@ -104,7 +104,6 @@ namespace Es.ToolsCommon
                 WaitHandle.WaitAll(waitHandles);
             }
             programInfo.Process.Dispose();
-            throw new Exception("Could not start process: " + programName);
         }
 
         private static void ContinueRead(IAsyncResult ar)

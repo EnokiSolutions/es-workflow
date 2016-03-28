@@ -20,7 +20,7 @@ namespace Es.Tcg
 
         public static void Main(string[] args)
         {
-            Console.Out.WriteLine("Es.Tcg version 0.4.0");
+            Console.Out.WriteLine("Es.Tcg {0}",BuildInfo.Version);
             var textReader = Console.In;
             if (args.Length == 1)
                 textReader = File.OpenText(args[0]);
@@ -420,7 +420,7 @@ namespace Es.Tcg
         }
 
         static readonly Regex RxBranchPrefix = new Regex(@"^((?:[a-zA-Z]+[0-9]+)+)\.", RegexOptions.Compiled);
-        static readonly Regex RxBranchParentPrefix = new Regex(@"^((?:[a-zA-Z]+[0-9]+)+)[a-zA-Z]+[0-9]+\.", RegexOptions.Compiled);
+        static readonly Regex RxBranchParentPrefix = new Regex(@"^[a-zA-Z]+[0-9]+((?:[a-zA-Z]+[0-9]+)+)\.", RegexOptions.Compiled);
 
         internal static string BranchPrefix(string branch)
         {
@@ -460,12 +460,6 @@ namespace Es.Tcg
             sb.AppendLine("");
 
             File.WriteAllText(Path.Combine(vcsRootsDir, outputDir + ".xml"), sb.ToString());
-        }
-
-        private static T GetValue<T>(this JObject jObject, string path, T defaultValue)
-        {
-            var temp = jObject.SelectToken(path, false);
-            return temp == null ? defaultValue : temp.ToObject<T>();
         }
     }
 

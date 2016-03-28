@@ -1,10 +1,9 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;
-using CH.Spawner;
+using System.Runtime;
+using Es.ToolsCommon;
 using Newtonsoft.Json.Linq;
-using TextWriter = System.IO.TextWriter;
 
 namespace Es.Nup
 {
@@ -42,14 +41,17 @@ nuspec file
         */
 
         private static string _nugetExe;
-        private static readonly ISpawner Spawner = new Spawner();
-        private static readonly TimeSpan WaitTime = TimeSpan.FromSeconds(600);
+        private const int WaitTimeMilliseconds = 120000;
 
         public static void Main(string[] args)
         {
-            if (args.Length < 1)
-                return;
+            Console.WriteLine("Es.Nup {0}", BuildInfo.Version);
 
+            if (args.Length < 1)
+            {
+                Console.WriteLine("no version given on commandline");
+                Environment.Exit(-2);
+            }
             var enviromentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
             var paths = enviromentPath.Split(';');
             Func<string, string> findExe = exe => paths.Select(x => Path.Combine(x, exe)).FirstOrDefault(File.Exists);
@@ -71,32 +73,20 @@ nuspec file
 
             foreach (var dir in Directory.EnumerateDirectories("."))
             {
-                foreach (var nup in Directory.EnumerateFiles(dir, "pack.nup"))
-                {
-                    try
-                    {
-                        Pack(version, apiKey, nugetUrl, dir, File.ReadAllText(nup));
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"pack issue: {ex}");
-                    }
-                }
-            }
-        }
+                Console.WriteLine(dir);
+                var nup = Path.Combine(dir, "pack.nup");
+                if (!File.Exists(nup))
+                    continue;
 
-        private static string Run(string program, string arguments = null)
-        {
-            try
-            {
-                var sw = new StringAndTextStreamWriter(Console.Out);
-                var pi = Spawner.Spawn(new StartInfo {ProgramName = program, Arguments = arguments, StdOut = sw});
-                Spawner.Wait(WaitTime, pi);
-                return sw.ToString();
-            }
-            catch
-            {
-                return null;
+                Console.WriteLine("pack: {0}", nup);
+                try
+                {
+                    Pack(version, apiKey, nugetUrl, dir, File.ReadAllText(nup));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"pack issue: {ex}");
+                }
             }
         }
 
@@ -123,55 +113,14 @@ nuspec file
   </metadata>
 </package>
 ");
-            Run(_nugetExe, $"pack {csprojDir}/{id}.csproj -Prop Configuration=Release");
-            Run(_nugetExe, $"push {id}.{version}.nupkg -ApiKey {apiKey} -Source {nugetUri}");
+            ProgramRunner.Run(_nugetExe, $"pack {csprojDir}/{id}.csproj -Prop Configuration=Release", outputTextWriter: Console.Out, timeoutMilliseconds: WaitTimeMilliseconds);
+            ProgramRunner.Run(_nugetExe, $"push {id}.{version}.nupkg -ApiKey {apiKey} -Source {nugetUri}", outputTextWriter: Console.Out, timeoutMilliseconds: WaitTimeMilliseconds);
         }
 
         private static T GetValue<T>(this JObject jObject, string path, T defaultValue)
         {
             var temp = jObject.SelectToken(path, false);
             return temp == null ? defaultValue : temp.ToObject<T>();
-        }
-
-        public class StringAndTextStreamWriter : IWriter
-        {
-            private readonly StringBuilder _stringBuilder = new StringBuilder();
-            private readonly TextWriter _textWriter;
-
-            public StringAndTextStreamWriter(TextWriter textWriter)
-            {
-                _textWriter = textWriter;
-            }
-
-            public void Write(string text)
-            {
-                _stringBuilder.Append(text);
-                _textWriter.Write(text);
-            }
-
-            public void Write(string formatString, params object[] formatArguments)
-            {
-                _stringBuilder.AppendFormat(formatString, formatArguments);
-                _textWriter.Write(formatString, formatArguments);
-            }
-
-            public void WriteLine(string text)
-            {
-                _stringBuilder.AppendLine(text);
-                _textWriter.WriteLine(text);
-            }
-
-            public void WriteLine(string formatString, params object[] formatArguments)
-            {
-                _stringBuilder.AppendFormat(formatString, formatArguments);
-                _stringBuilder.AppendLine();
-                _textWriter.WriteLine(formatString, formatArguments);
-            }
-
-            public override string ToString()
-            {
-                return _stringBuilder.ToString();
-            }
         }
     }
 }
