@@ -1,10 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;
-using CH.Spawner;
+using Es.ToolsCommon;
 using Newtonsoft.Json.Linq;
-using TextWriter = System.IO.TextWriter;
 
 namespace Es.Nup
 {
@@ -42,8 +40,6 @@ nuspec file
         */
 
         private static string _nugetExe;
-        private static readonly ISpawner Spawner = new Spawner();
-        private static readonly TimeSpan WaitTime = TimeSpan.FromSeconds(600);
 
         public static void Main(string[] args)
         {
@@ -85,21 +81,6 @@ nuspec file
             }
         }
 
-        private static string Run(string program, string arguments = null)
-        {
-            try
-            {
-                var sw = new StringAndTextStreamWriter(Console.Out);
-                var pi = Spawner.Spawn(new StartInfo {ProgramName = program, Arguments = arguments, StdOut = sw});
-                Spawner.Wait(WaitTime, pi);
-                return sw.ToString();
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         private static void Pack(string version, string apiKey, string nugetUri, string csprojDir, string nup)
         {
             var nJson = JObject.Parse(nup);
@@ -123,55 +104,14 @@ nuspec file
   </metadata>
 </package>
 ");
-            Run(_nugetExe, $"pack {csprojDir}/{id}.csproj -Prop Configuration=Release");
-            Run(_nugetExe, $"push {id}.{version}.nupkg -ApiKey {apiKey} -Source {nugetUri}");
+            ProgramRunner.Run(_nugetExe, $"pack {csprojDir}/{id}.csproj -Prop Configuration=Release");
+            ProgramRunner.Run(_nugetExe, $"push {id}.{version}.nupkg -ApiKey {apiKey} -Source {nugetUri}");
         }
 
         private static T GetValue<T>(this JObject jObject, string path, T defaultValue)
         {
             var temp = jObject.SelectToken(path, false);
             return temp == null ? defaultValue : temp.ToObject<T>();
-        }
-
-        public class StringAndTextStreamWriter : IWriter
-        {
-            private readonly StringBuilder _stringBuilder = new StringBuilder();
-            private readonly TextWriter _textWriter;
-
-            public StringAndTextStreamWriter(TextWriter textWriter)
-            {
-                _textWriter = textWriter;
-            }
-
-            public void Write(string text)
-            {
-                _stringBuilder.Append(text);
-                _textWriter.Write(text);
-            }
-
-            public void Write(string formatString, params object[] formatArguments)
-            {
-                _stringBuilder.AppendFormat(formatString, formatArguments);
-                _textWriter.Write(formatString, formatArguments);
-            }
-
-            public void WriteLine(string text)
-            {
-                _stringBuilder.AppendLine(text);
-                _textWriter.WriteLine(text);
-            }
-
-            public void WriteLine(string formatString, params object[] formatArguments)
-            {
-                _stringBuilder.AppendFormat(formatString, formatArguments);
-                _stringBuilder.AppendLine();
-                _textWriter.WriteLine(formatString, formatArguments);
-            }
-
-            public override string ToString()
-            {
-                return _stringBuilder.ToString();
-            }
         }
     }
 }
