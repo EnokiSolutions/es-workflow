@@ -45,7 +45,7 @@ namespace Es.Vsg
 
             var slnJson = JObject.Parse(File.ReadAllText(SlnVsgFilename));
             var slnFilename = slnJson["name"].ToObject<string>() + ".sln";
-
+            var hasContracts = slnJson.GetValue("contracts", false);
             Console.WriteLine("{0}", slnFilename);
 
             var packageInfos = slnJson["packages"].ToObject<JArray>().Select(x => x.ToObject<string[]>()).ToArray();
@@ -72,7 +72,7 @@ namespace Es.Vsg
             foreach (var csProjAndGuid in csProjAndGuids)
             {
                 WriteVersionFile(version, csProjAndGuid.Key);
-                WriteCsProjAndAssemblyInfo(csProjAndGuid, csProjAndGuids, packagesDllMap);
+                WriteCsProjAndAssemblyInfo(csProjAndGuid, csProjAndGuids, packagesDllMap, hasContracts);
             }
             WriteSln(slnFilename, csProjAndGuids);
         }
@@ -94,7 +94,7 @@ namespace {csProjDir}
         }
 
         private static void WriteCsProjAndAssemblyInfo(KeyValuePair<string, Guid> csProjAndGuid,
-            IDictionary<string, Guid> csProjAndGuids, IDictionary<string, string> packagesDllMap)
+            IDictionary<string, Guid> csProjAndGuids, IDictionary<string, string> packagesDllMap, bool hasContracts)
         {
             var csprojJson = JObject.Parse(File.ReadAllText(Path.Combine(csProjAndGuid.Key, CsprojVsgFilename)));
             var refs = csprojJson["refs"].ToObject<JArray>().Select(x => x.ToObject<string>());
@@ -153,21 +153,8 @@ using System.Runtime.InteropServices;
             sb.AppendLine("    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>");
             sb.AppendLine("    <TargetFrameworkProfile />");
             sb.AppendLine($"    <StartWorkingDirectory>{startupWorkingDirectory}</StartWorkingDirectory>");
-            //sb.AppendLine("    <PublishUrl>publish\\</PublishUrl>");
-            //sb.AppendLine("    <Install>true</Install>");
-            //sb.AppendLine("    <InstallFrom>Disk</InstallFrom>");
-            //sb.AppendLine("    <UpdateEnabled>false</UpdateEnabled>");
-            //sb.AppendLine("    <UpdateMode>Foreground</UpdateMode>");
-            //sb.AppendLine("    <UpdateInterval>7</UpdateInterval>");
-            //sb.AppendLine("    <UpdateIntervalUnits>Days</UpdateIntervalUnits>");
-            //sb.AppendLine("    <UpdatePeriodically>false</UpdatePeriodically>");
-            //sb.AppendLine("    <UpdateRequired>false</UpdateRequired>");
-            //sb.AppendLine("    <MapFileExtensions>true</MapFileExtensions>");
-            //sb.AppendLine("    <ApplicationRevision>0</ApplicationRevision>");
-            //sb.AppendLine("    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>");
-            //sb.AppendLine("    <IsWebBootstrapper>false</IsWebBootstrapper>");
-            //sb.AppendLine("    <UseApplicationTrust>false</UseApplicationTrust>");
-            //sb.AppendLine("    <BootstrapperEnabled>true</BootstrapperEnabled>");
+            if (hasContracts)
+                sb.AppendLine("    <CodeContractsAssemblyMode>0</CodeContractsAssemblyMode>");
             sb.AppendLine("  </PropertyGroup>");
             sb.AppendLine("  <PropertyGroup Condition=\" \'$(Configuration)|$(Platform)\' == \'Debug|x64\' \">");
             sb.AppendLine("    <PlatformTarget>x64</PlatformTarget>");
@@ -176,12 +163,68 @@ using System.Runtime.InteropServices;
             sb.AppendLine("    <Optimize>false</Optimize>");
             sb.AppendLine($"    <OutputPath>..\\o\\{csProjDir}\\bin\\Debug\\</OutputPath>");
             sb.AppendLine($"    <IntermediateOutputPath>..\\o\\{csProjDir}\\obj\\Debug\\</IntermediateOutputPath>");
-            sb.AppendLine("    <DefineConstants>DEBUG;TRACE</DefineConstants>");
+            if (hasContracts)
+                sb.AppendLine("    <DefineConstants>DEBUG;TRACE;CODE_ANALYSIS;CONTRACTS_FULL</DefineConstants>");
+            else
+                sb.AppendLine("    <DefineConstants>DEBUG;TRACE</DefineConstants>");
             sb.AppendLine("    <ErrorReport>prompt</ErrorReport>");
             sb.AppendLine("    <WarningLevel>4</WarningLevel>");
             sb.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
             sb.AppendLine("    <RunCodeAnalysis>true</RunCodeAnalysis>");
             sb.AppendLine("    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>");
+            if (hasContracts)
+            {
+                sb.AppendLine("    <CodeContractsEnableRuntimeChecking>True</CodeContractsEnableRuntimeChecking>");
+                sb.AppendLine("    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>");
+                sb.AppendLine("    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>");
+                sb.AppendLine("    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>");
+                sb.AppendLine("    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>");
+                sb.AppendLine("    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>");
+                sb.AppendLine("    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>");
+                sb.AppendLine("    <CodeContractsBoundsObligations>True</CodeContractsBoundsObligations>");
+                sb.AppendLine("    <CodeContractsArithmeticObligations>True</CodeContractsArithmeticObligations>");
+                sb.AppendLine("    <CodeContractsEnumObligations>True</CodeContractsEnumObligations>");
+                sb.AppendLine("    <CodeContractsRedundantAssumptions>True</CodeContractsRedundantAssumptions>");
+                sb.AppendLine(
+                    "    <CodeContractsAssertsToContractsCheckBox>True</CodeContractsAssertsToContractsCheckBox>");
+                sb.AppendLine("    <CodeContractsRedundantTests>True</CodeContractsRedundantTests>");
+                sb.AppendLine(
+                    "    <CodeContractsMissingPublicRequiresAsWarnings>True</CodeContractsMissingPublicRequiresAsWarnings>");
+                sb.AppendLine(
+                    "    <CodeContractsMissingPublicEnsuresAsWarnings>True</CodeContractsMissingPublicEnsuresAsWarnings>");
+                sb.AppendLine("    <CodeContractsInferRequires>True</CodeContractsInferRequires>");
+                sb.AppendLine("    <CodeContractsInferEnsures>True</CodeContractsInferEnsures>");
+                sb.AppendLine(
+                    "    <CodeContractsInferEnsuresAutoProperties>True</CodeContractsInferEnsuresAutoProperties>");
+                sb.AppendLine("    <CodeContractsInferObjectInvariants>True</CodeContractsInferObjectInvariants>");
+                sb.AppendLine("    <CodeContractsSuggestAssumptions>True</CodeContractsSuggestAssumptions>");
+                sb.AppendLine(
+                    "    <CodeContractsSuggestAssumptionsForCallees>True</CodeContractsSuggestAssumptionsForCallees>");
+                sb.AppendLine("    <CodeContractsSuggestRequires>True</CodeContractsSuggestRequires>");
+                sb.AppendLine("    <CodeContractsNecessaryEnsures>True</CodeContractsNecessaryEnsures>");
+                sb.AppendLine("    <CodeContractsSuggestObjectInvariants>True</CodeContractsSuggestObjectInvariants>");
+                sb.AppendLine("    <CodeContractsSuggestReadonly>True</CodeContractsSuggestReadonly>");
+                sb.AppendLine("    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>");
+                sb.AppendLine("    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>");
+                sb.AppendLine("    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>");
+                sb.AppendLine("    <CodeContractsEmitXMLDocs>True</CodeContractsEmitXMLDocs>");
+                sb.AppendLine("    <CodeContractsCustomRewriterAssembly />");
+                sb.AppendLine("    <CodeContractsCustomRewriterClass />");
+                sb.AppendLine("    <CodeContractsLibPaths />");
+                sb.AppendLine("    <CodeContractsExtraRewriteOptions />");
+                sb.AppendLine("    <CodeContractsExtraAnalysisOptions />");
+                sb.AppendLine("    <CodeContractsSQLServerOption />");
+                sb.AppendLine("    <CodeContractsBaseLineFile />");
+                sb.AppendLine("    <CodeContractsCacheAnalysisResults>True</CodeContractsCacheAnalysisResults>");
+                sb.AppendLine(
+                    "    <CodeContractsSkipAnalysisIfCannotConnectToCache>False</CodeContractsSkipAnalysisIfCannotConnectToCache>");
+                sb.AppendLine("    <CodeContractsFailBuildOnWarnings>True</CodeContractsFailBuildOnWarnings>");
+                sb.AppendLine(
+                    "    <CodeContractsBeingOptimisticOnExternal>True</CodeContractsBeingOptimisticOnExternal>");
+                sb.AppendLine("    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>");
+                sb.AppendLine("    <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>");
+                sb.AppendLine("    <CodeContractsAnalysisWarningLevel>3</CodeContractsAnalysisWarningLevel>");
+            }
             sb.AppendLine("  </PropertyGroup>");
             sb.AppendLine("  <PropertyGroup Condition=\" \'$(Configuration)|$(Platform)\' == \'Release|x64\' \">");
             sb.AppendLine("    <PlatformTarget>x64</PlatformTarget>");
@@ -189,12 +232,60 @@ using System.Runtime.InteropServices;
             sb.AppendLine("    <Optimize>true</Optimize>");
             sb.AppendLine($"    <OutputPath>..\\o\\{csProjDir}\\bin\\Release\\</OutputPath>");
             sb.AppendLine($"    <IntermediateOutputPath>..\\o\\{csProjDir}\\obj\\Release\\</IntermediateOutputPath>");
-            sb.AppendLine("    <DefineConstants>TRACE</DefineConstants>");
+            if (hasContracts)
+                sb.AppendLine("    <DefineConstants>TRACE;CODE_ANALYSIS;CONTRACTS_FULL</DefineConstants>");
+            else
+                sb.AppendLine("    <DefineConstants>TRACE</DefineConstants>");
             sb.AppendLine("    <ErrorReport>prompt</ErrorReport>");
             sb.AppendLine("    <WarningLevel>4</WarningLevel>");
             sb.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
             sb.AppendLine("    <RunCodeAnalysis>true</RunCodeAnalysis>");
             sb.AppendLine("    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>");
+            if (hasContracts)
+            {
+                sb.AppendLine("    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>");
+                sb.AppendLine("    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>");
+                sb.AppendLine("    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>");
+                sb.AppendLine("    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>");
+                sb.AppendLine("    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>");
+                sb.AppendLine("    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>");
+                sb.AppendLine("    <CodeContractsBoundsObligations>True</CodeContractsBoundsObligations>");
+                sb.AppendLine("    <CodeContractsArithmeticObligations>True</CodeContractsArithmeticObligations>");
+                sb.AppendLine("    <CodeContractsEnumObligations>True</CodeContractsEnumObligations>");
+                sb.AppendLine("    <CodeContractsRedundantAssumptions>True</CodeContractsRedundantAssumptions>");
+                sb.AppendLine("    <CodeContractsAssertsToContractsCheckBox>True</CodeContractsAssertsToContractsCheckBox>");
+                sb.AppendLine("    <CodeContractsRedundantTests>True</CodeContractsRedundantTests>");
+                sb.AppendLine("    <CodeContractsMissingPublicRequiresAsWarnings>True</CodeContractsMissingPublicRequiresAsWarnings>");
+                sb.AppendLine("    <CodeContractsMissingPublicEnsuresAsWarnings>True</CodeContractsMissingPublicEnsuresAsWarnings>");
+                sb.AppendLine("    <CodeContractsInferRequires>True</CodeContractsInferRequires>");
+                sb.AppendLine("    <CodeContractsInferEnsures>True</CodeContractsInferEnsures>");
+                sb.AppendLine("    <CodeContractsInferEnsuresAutoProperties>True</CodeContractsInferEnsuresAutoProperties>");
+                sb.AppendLine("    <CodeContractsInferObjectInvariants>True</CodeContractsInferObjectInvariants>");
+                sb.AppendLine("    <CodeContractsSuggestAssumptions>True</CodeContractsSuggestAssumptions>");
+                sb.AppendLine("    <CodeContractsSuggestAssumptionsForCallees>True</CodeContractsSuggestAssumptionsForCallees>");
+                sb.AppendLine("    <CodeContractsSuggestRequires>True</CodeContractsSuggestRequires>");
+                sb.AppendLine("    <CodeContractsNecessaryEnsures>True</CodeContractsNecessaryEnsures>");
+                sb.AppendLine("    <CodeContractsSuggestObjectInvariants>True</CodeContractsSuggestObjectInvariants>");
+                sb.AppendLine("    <CodeContractsSuggestReadonly>True</CodeContractsSuggestReadonly>");
+                sb.AppendLine("    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>");
+                sb.AppendLine("    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>");
+                sb.AppendLine("    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>");
+                sb.AppendLine("    <CodeContractsCustomRewriterAssembly />");
+                sb.AppendLine("    <CodeContractsCustomRewriterClass />");
+                sb.AppendLine("    <CodeContractsLibPaths />");
+                sb.AppendLine("    <CodeContractsExtraRewriteOptions />");
+                sb.AppendLine("    <CodeContractsExtraAnalysisOptions />");
+                sb.AppendLine("    <CodeContractsSQLServerOption />");
+                sb.AppendLine("    <CodeContractsBaseLineFile />");
+                sb.AppendLine("    <CodeContractsCacheAnalysisResults>True</CodeContractsCacheAnalysisResults>");
+                sb.AppendLine("    <CodeContractsSkipAnalysisIfCannotConnectToCache>False</CodeContractsSkipAnalysisIfCannotConnectToCache>");
+                sb.AppendLine("    <CodeContractsFailBuildOnWarnings>True</CodeContractsFailBuildOnWarnings>");
+                sb.AppendLine("    <CodeContractsBeingOptimisticOnExternal>True</CodeContractsBeingOptimisticOnExternal>");
+                sb.AppendLine("    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>");
+                sb.AppendLine("    <CodeContractsAnalysisWarningLevel>3</CodeContractsAnalysisWarningLevel>");
+                sb.AppendLine("    <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>");
+                sb.AppendLine("    <CodeContractsEmitXMLDocs>True</CodeContractsEmitXMLDocs>");
+            }
             sb.AppendLine("  </PropertyGroup>");
 
             if (outputType == "exe")
@@ -245,7 +336,8 @@ using System.Runtime.InteropServices;
             sb.AppendLine("  <ItemGroup>");
             sb.AppendLine("    <None Include=\"App.config\" />");
             sb.AppendLine("  </ItemGroup>");
-
+            if (hasContracts)
+                sb.AppendLine("  <Import Project=\"$(CodeContractsInstallDir)\\MsBuild\\v14.0\\Microsoft.CodeContracts.targets\" />");
             sb.AppendLine("  <Import Project=\"$(MSBuildToolsPath)\\Microsoft.CSharp.targets\" />");
             
             if (outputType == "exe" && _ilMergeExe != null)

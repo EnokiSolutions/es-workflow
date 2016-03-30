@@ -176,15 +176,16 @@ namespace Es.Tcg
             var publish = cjson.GetValue("publish", string.Empty);
             var name = cjson.GetValue("name", repoPathArray.Last());
             var sln = cjson.GetValue("sln", name + ".sln");
+            var hasTests = cjson.GetValue("test", true);
 
             if (branch != "master")
                 version = version + "-" + branchPrefix;
 
             ConfigureVcs(outputDir, repo, branch);
-            ConfigureBuild(outputDir, name, sln, version, publish);
+            ConfigureBuild(outputDir, name, sln, version, publish, hasTests);
         }
 
-        private static void ConfigureBuild(string outputDir, string name, string sln, string version, string publish)
+        private static void ConfigureBuild(string outputDir, string name, string sln, string version, string publish, bool hasTests)
         {
             var sb = new StringBuilder();
             var buildTypesDir = Path.Combine(outputDir, "buildTypes");
@@ -255,35 +256,40 @@ namespace Es.Tcg
             sb.AppendLine("          <param name=\"toolsVersion\" value=\"14.0\" />");
             sb.AppendLine("        </parameters>");
             sb.AppendLine("      </runner>");
-            sb.AppendLine("      <runner id=\"RUNNER_2\" name=\"\" type=\"NUnit\">");
-            sb.AppendLine("        <parameters>");
-            sb.AppendLine("          <param name=\"dotNetCoverage.NCover.HTMLReport.File.Sort\" value=\"0\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.NCover.HTMLReport.File.Type\" value=\"1\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.NCover.Reg\" value=\"selected\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.NCover.platformBitness\" value=\"x86\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.NCover.platformVersion\" value=\"v2.0\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.NCover3.Reg\" value=\"selected\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.NCover3.args\" value=\"//ias .*\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.NCover3.platformBitness\" value=\"x86\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.NCover3.platformVersion\" value=\"v2.0\" />");
-            sb.AppendLine(
-                "          <param name=\"dotNetCoverage.NCover3.reporter.executable.args\" value=\"//or FullCoverageReport:Html:{teamcity.report.path}\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.Reg\" value=\"selected\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.includes\" value=\"[*]*\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.platformBitness\" value=\"x86\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.platformVersion\" value=\"v2.0\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.dotCover.attributeFilters\" value=\"-:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute\" />");
-            sb.AppendLine("          <param name=\"dotNetCoverage.tool\" value=\"dotcover\" />");
-            sb.AppendLine("          <param name=\"dotNetTestRunner.Type\" value=\"NUnit\" />");
-            sb.AppendLine("          <param name=\"nunit_enabled\" value=\"checked\" />");
-            sb.AppendLine("          <param name=\"nunit_environment\" value=\"v4.0\" />");
-            sb.AppendLine("          <param name=\"nunit_include\" value=\"o/*/bin/Release/*.Test.dll\" />");
-            //sb.AppendLine("          <param name=\"nunit_path\" value=\"C:\\Program Files (x86)\\NUnit.org\\nunit-console\\nunit3-console.exe\" />");
-            sb.AppendLine("          <param name=\"nunit_platform\" value=\"MSIL\" />");
-            sb.AppendLine("          <param name=\"nunit_version\" value=\"NUnit-2.6.4\" />");
-            sb.AppendLine("          <param name=\"teamcity.step.mode\" value=\"default\" />");
-            sb.AppendLine("        </parameters>");
-            sb.AppendLine("      </runner>");
+
+            if (hasTests)
+            {
+                sb.AppendLine("      <runner id=\"RUNNER_2\" name=\"\" type=\"NUnit\">");
+                sb.AppendLine("        <parameters>");
+                sb.AppendLine("          <param name=\"dotNetCoverage.NCover.HTMLReport.File.Sort\" value=\"0\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.NCover.HTMLReport.File.Type\" value=\"1\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.NCover.Reg\" value=\"selected\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.NCover.platformBitness\" value=\"x86\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.NCover.platformVersion\" value=\"v2.0\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.NCover3.Reg\" value=\"selected\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.NCover3.args\" value=\"//ias .*\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.NCover3.platformBitness\" value=\"x86\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.NCover3.platformVersion\" value=\"v2.0\" />");
+                sb.AppendLine(
+                    "          <param name=\"dotNetCoverage.NCover3.reporter.executable.args\" value=\"//or FullCoverageReport:Html:{teamcity.report.path}\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.Reg\" value=\"selected\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.includes\" value=\"[*]*\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.platformBitness\" value=\"x86\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.platformVersion\" value=\"v2.0\" />");
+                sb.AppendLine(
+                    "          <param name=\"dotNetCoverage.dotCover.attributeFilters\" value=\"-:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute\" />");
+                sb.AppendLine("          <param name=\"dotNetCoverage.tool\" value=\"dotcover\" />");
+                sb.AppendLine("          <param name=\"dotNetTestRunner.Type\" value=\"NUnit\" />");
+                sb.AppendLine("          <param name=\"nunit_enabled\" value=\"checked\" />");
+                sb.AppendLine("          <param name=\"nunit_environment\" value=\"v4.0\" />");
+                sb.AppendLine("          <param name=\"nunit_include\" value=\"o/*/bin/Release/*.Test.dll\" />");
+                //sb.AppendLine("          <param name=\"nunit_path\" value=\"C:\\Program Files (x86)\\NUnit.org\\nunit-console\\nunit3-console.exe\" />");
+                sb.AppendLine("          <param name=\"nunit_platform\" value=\"MSIL\" />");
+                sb.AppendLine("          <param name=\"nunit_version\" value=\"NUnit-2.6.4\" />");
+                sb.AppendLine("          <param name=\"teamcity.step.mode\" value=\"default\" />");
+                sb.AppendLine("        </parameters>");
+                sb.AppendLine("      </runner>");
+            }
             sb.AppendLine("      <runner id=\"RUNNER_6\" name=\"Nuget Package and Push\" type=\"simpleRunner\">");
             sb.AppendLine("        <parameters>");
             sb.AppendLine("          <param name=\"command.executable\" value=\"es.nup.exe\" />");
@@ -307,36 +313,41 @@ namespace Es.Tcg
             sb.AppendLine("      </build-trigger>");
             sb.AppendLine("    </build-triggers>");
             sb.AppendLine("    <build-extensions>");
-            sb.AppendLine("      <extension id=\"BUILD_EXT_1\" type=\"BuildFailureOnMetric\">");
-            sb.AppendLine("        <parameters>");
-            sb.AppendLine("          <param name=\"anchorBuild\" value=\"lastSuccessful\" />");
-            sb.AppendLine("          <param name=\"metricKey\" value=\"CodeCoverageS\" />");
-            sb.AppendLine("          <param name=\"metricThreshold\" value=\"100\" />");
-            sb.AppendLine("          <param name=\"metricUnits\" value=\"metricUnitsDefault\" />");
-            sb.AppendLine("          <param name=\"moreOrLess\" value=\"less\" />");
-            sb.AppendLine("          <param name=\"withBuildAnchor\" value=\"false\" />");
-            sb.AppendLine("        </parameters>");
-            sb.AppendLine("      </extension>");
-            sb.AppendLine("      <extension id=\"BUILD_EXT_2\" type=\"BuildFailureOnMetric\">");
-            sb.AppendLine("        <parameters>");
-            sb.AppendLine("          <param name=\"anchorBuild\" value=\"lastSuccessful\" />");
-            sb.AppendLine("          <param name=\"metricKey\" value=\"InspectionStatsE\" />");
-            sb.AppendLine("          <param name=\"metricThreshold\" value=\"0\" />");
-            sb.AppendLine("          <param name=\"metricUnits\" value=\"metricUnitsDefault\" />");
-            sb.AppendLine("          <param name=\"moreOrLess\" value=\"more\" />");
-            sb.AppendLine("          <param name=\"withBuildAnchor\" value=\"false\" />");
-            sb.AppendLine("        </parameters>");
-            sb.AppendLine("      </extension>");
-            sb.AppendLine("      <extension id=\"BUILD_EXT_3\" type=\"BuildFailureOnMetric\">");
-            sb.AppendLine("        <parameters>");
-            sb.AppendLine("          <param name=\"anchorBuild\" value=\"lastSuccessful\" />");
-            sb.AppendLine("          <param name=\"metricKey\" value=\"buildFailedTestCount\" />");
-            sb.AppendLine("          <param name=\"metricThreshold\" value=\"0\" />");
-            sb.AppendLine("          <param name=\"metricUnits\" value=\"metricUnitsDefault\" />");
-            sb.AppendLine("          <param name=\"moreOrLess\" value=\"more\" />");
-            sb.AppendLine("          <param name=\"withBuildAnchor\" value=\"false\" />");
-            sb.AppendLine("        </parameters>");
-            sb.AppendLine("      </extension>");
+            if (hasTests)
+            {
+                sb.AppendLine("      <extension id=\"BUILD_EXT_1\" type=\"BuildFailureOnMetric\">");
+                sb.AppendLine("        <parameters>");
+                sb.AppendLine("          <param name=\"anchorBuild\" value=\"lastSuccessful\" />");
+                sb.AppendLine("          <param name=\"metricKey\" value=\"CodeCoverageS\" />");
+                sb.AppendLine("          <param name=\"metricThreshold\" value=\"100\" />");
+                sb.AppendLine("          <param name=\"metricUnits\" value=\"metricUnitsDefault\" />");
+                sb.AppendLine("          <param name=\"moreOrLess\" value=\"less\" />");
+                sb.AppendLine("          <param name=\"withBuildAnchor\" value=\"false\" />");
+                sb.AppendLine("        </parameters>");
+                sb.AppendLine("      </extension>");
+            
+                sb.AppendLine("      <extension id=\"BUILD_EXT_2\" type=\"BuildFailureOnMetric\">");
+                sb.AppendLine("        <parameters>");
+                sb.AppendLine("          <param name=\"anchorBuild\" value=\"lastSuccessful\" />");
+                sb.AppendLine("          <param name=\"metricKey\" value=\"InspectionStatsE\" />");
+                sb.AppendLine("          <param name=\"metricThreshold\" value=\"0\" />");
+                sb.AppendLine("          <param name=\"metricUnits\" value=\"metricUnitsDefault\" />");
+                sb.AppendLine("          <param name=\"moreOrLess\" value=\"more\" />");
+                sb.AppendLine("          <param name=\"withBuildAnchor\" value=\"false\" />");
+                sb.AppendLine("        </parameters>");
+                sb.AppendLine("      </extension>");
+            
+                sb.AppendLine("      <extension id=\"BUILD_EXT_3\" type=\"BuildFailureOnMetric\">");
+                sb.AppendLine("        <parameters>");
+                sb.AppendLine("          <param name=\"anchorBuild\" value=\"lastSuccessful\" />");
+                sb.AppendLine("          <param name=\"metricKey\" value=\"buildFailedTestCount\" />");
+                sb.AppendLine("          <param name=\"metricThreshold\" value=\"0\" />");
+                sb.AppendLine("          <param name=\"metricUnits\" value=\"metricUnitsDefault\" />");
+                sb.AppendLine("          <param name=\"moreOrLess\" value=\"more\" />");
+                sb.AppendLine("          <param name=\"withBuildAnchor\" value=\"false\" />");
+                sb.AppendLine("        </parameters>");
+                sb.AppendLine("      </extension>");
+            }
             sb.AppendLine("    </build-extensions>");
             sb.AppendLine("    <cleanup />");
             sb.AppendLine("  </settings>");
