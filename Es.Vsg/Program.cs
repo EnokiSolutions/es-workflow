@@ -104,6 +104,7 @@ namespace {csProjDir}
             var guid = csProjAndGuid.Value;
 
             var hasTests = File.Exists(Path.Combine(csProjDir + ".Test", CsprojVsgFilename));
+            var contractSuggestions = csProjDir.EndsWith(".Test") ? "False" : "True"; // don't enable contract suggestions on test packages
 
             var fuckingUserFile = Path.Combine(csProjDir, csProjDir + ".csproj.user");
             if (File.Exists(fuckingUserFile))
@@ -197,13 +198,12 @@ using System.Runtime.InteropServices;
                 sb.AppendLine(
                     "    <CodeContractsInferEnsuresAutoProperties>True</CodeContractsInferEnsuresAutoProperties>");
                 sb.AppendLine("    <CodeContractsInferObjectInvariants>True</CodeContractsInferObjectInvariants>");
-                sb.AppendLine("    <CodeContractsSuggestAssumptions>True</CodeContractsSuggestAssumptions>");
-                sb.AppendLine(
-                    "    <CodeContractsSuggestAssumptionsForCallees>True</CodeContractsSuggestAssumptionsForCallees>");
-                sb.AppendLine("    <CodeContractsSuggestRequires>True</CodeContractsSuggestRequires>");
+                sb.AppendLine($"    <CodeContractsSuggestAssumptions>{contractSuggestions}</CodeContractsSuggestAssumptions>");
+                sb.AppendLine($"    <CodeContractsSuggestAssumptionsForCallees>{contractSuggestions}</CodeContractsSuggestAssumptionsForCallees>");
+                sb.AppendLine($"    <CodeContractsSuggestRequires>{contractSuggestions}</CodeContractsSuggestRequires>");
                 sb.AppendLine("    <CodeContractsNecessaryEnsures>True</CodeContractsNecessaryEnsures>");
-                sb.AppendLine("    <CodeContractsSuggestObjectInvariants>True</CodeContractsSuggestObjectInvariants>");
-                sb.AppendLine("    <CodeContractsSuggestReadonly>True</CodeContractsSuggestReadonly>");
+                sb.AppendLine($"    <CodeContractsSuggestObjectInvariants>{contractSuggestions}</CodeContractsSuggestObjectInvariants>");
+                sb.AppendLine($"    <CodeContractsSuggestReadonly>{contractSuggestions}</CodeContractsSuggestReadonly>");
                 sb.AppendLine("    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>");
                 sb.AppendLine("    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>");
                 sb.AppendLine("    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>");
@@ -262,12 +262,12 @@ using System.Runtime.InteropServices;
                 sb.AppendLine("    <CodeContractsInferEnsures>True</CodeContractsInferEnsures>");
                 sb.AppendLine("    <CodeContractsInferEnsuresAutoProperties>True</CodeContractsInferEnsuresAutoProperties>");
                 sb.AppendLine("    <CodeContractsInferObjectInvariants>True</CodeContractsInferObjectInvariants>");
-                sb.AppendLine("    <CodeContractsSuggestAssumptions>True</CodeContractsSuggestAssumptions>");
-                sb.AppendLine("    <CodeContractsSuggestAssumptionsForCallees>True</CodeContractsSuggestAssumptionsForCallees>");
-                sb.AppendLine("    <CodeContractsSuggestRequires>True</CodeContractsSuggestRequires>");
+                sb.AppendLine($"    <CodeContractsSuggestAssumptions>{contractSuggestions}</CodeContractsSuggestAssumptions>");
+                sb.AppendLine($"    <CodeContractsSuggestAssumptionsForCallees>{contractSuggestions}</CodeContractsSuggestAssumptionsForCallees>");
+                sb.AppendLine($"    <CodeContractsSuggestRequires>{contractSuggestions}</CodeContractsSuggestRequires>");
                 sb.AppendLine("    <CodeContractsNecessaryEnsures>True</CodeContractsNecessaryEnsures>");
-                sb.AppendLine("    <CodeContractsSuggestObjectInvariants>True</CodeContractsSuggestObjectInvariants>");
-                sb.AppendLine("    <CodeContractsSuggestReadonly>True</CodeContractsSuggestReadonly>");
+                sb.AppendLine($"    <CodeContractsSuggestObjectInvariants>{contractSuggestions}</CodeContractsSuggestObjectInvariants>");
+                sb.AppendLine($"    <CodeContractsSuggestReadonly>{contractSuggestions}</CodeContractsSuggestReadonly>");
                 sb.AppendLine("    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>");
                 sb.AppendLine("    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>");
                 sb.AppendLine("    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>");
