@@ -148,7 +148,7 @@ using System.Runtime.InteropServices;
             sb.AppendLine("    <AppDesignerFolder>Properties</AppDesignerFolder>");
             sb.AppendLine($"    <RootNamespace>{csProjDir}</RootNamespace>");
             sb.AppendLine($"    <AssemblyName>{csProjDir}</AssemblyName>");
-            sb.AppendLine("    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>");
+            sb.AppendLine("    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>");
             sb.AppendLine("    <FileAlignment>512</FileAlignment>");
             sb.AppendLine("    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>");
             sb.AppendLine("    <TargetFrameworkProfile />");
@@ -177,7 +177,7 @@ using System.Runtime.InteropServices;
                 sb.AppendLine("    <CodeContractsEnableRuntimeChecking>True</CodeContractsEnableRuntimeChecking>");
                 sb.AppendLine("    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>");
                 sb.AppendLine("    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>");
-                sb.AppendLine("    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>");
+                sb.AppendLine("    <CodeContractsRuntimeCallSiteRequires>True</CodeContractsRuntimeCallSiteRequires>");
                 sb.AppendLine("    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>");
                 sb.AppendLine("    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>");
                 sb.AppendLine("    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>");
@@ -243,9 +243,10 @@ using System.Runtime.InteropServices;
             sb.AppendLine("    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>");
             if (hasContracts)
             {
+                sb.AppendLine("    <CodeContractsEnableRuntimeChecking>True</CodeContractsEnableRuntimeChecking>");
                 sb.AppendLine("    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>");
                 sb.AppendLine("    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>");
-                sb.AppendLine("    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>");
+                sb.AppendLine("    <CodeContractsRuntimeCallSiteRequires>True</CodeContractsRuntimeCallSiteRequires>");
                 sb.AppendLine("    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>");
                 sb.AppendLine("    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>");
                 sb.AppendLine("    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>");
@@ -336,9 +337,13 @@ using System.Runtime.InteropServices;
             sb.AppendLine("  <ItemGroup>");
             sb.AppendLine("    <None Include=\"App.config\" />");
             sb.AppendLine("  </ItemGroup>");
-            if (hasContracts)
-                sb.AppendLine("  <Import Project=\"$(CodeContractsInstallDir)\\MsBuild\\v14.0\\Microsoft.CodeContracts.targets\" />");
             sb.AppendLine("  <Import Project=\"$(MSBuildToolsPath)\\Microsoft.CSharp.targets\" />");
+            if (hasContracts)
+            {
+                var ccid = Environment.GetEnvironmentVariable("CodeContractsInstallDir") ?? "C:\\Program Files (x86)\\Microsoft\\Contracts\\";
+                sb.AppendLine(
+                    $"  <Import Project=\"{ccid}MsBuild\\v14.0\\Microsoft.CodeContracts.targets\" />");
+            }
             
             if (outputType == "exe" && _ilMergeExe != null)
             {
@@ -362,7 +367,7 @@ using System.Runtime.InteropServices;
                     @"<?xml version=""1.0"" encoding=""utf-8""?>
 <configuration>
     <startup>
-        <supportedRuntime version=""v4.0"" sku="".NETFramework,Version=v4.6.1"" />
+        <supportedRuntime version=""v4.0"" sku="".NETFramework,Version=v4.5"" />
     </startup>
 </configuration>");
             }
