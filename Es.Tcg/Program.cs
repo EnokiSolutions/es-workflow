@@ -177,15 +177,16 @@ namespace Es.Tcg
             var name = cjson.GetValue("name", repoPathArray.Last());
             var sln = cjson.GetValue("sln", name + ".sln");
             var hasTests = cjson.GetValue("test", true);
+            var hasCustomerDotSettings = cjson.GetValue("dotSettings", false);
 
             if (branch != "master")
                 version = version + "-" + branchPrefix;
 
             ConfigureVcs(outputDir, repo, branch);
-            ConfigureBuild(outputDir, name, sln, version, publish, hasTests);
+            ConfigureBuild(outputDir, name, sln, version, publish, hasTests, hasCustomerDotSettings);
         }
 
-        private static void ConfigureBuild(string outputDir, string name, string sln, string version, string publish, bool hasTests)
+        private static void ConfigureBuild(string outputDir, string name, string sln, string version, string publish, bool hasTests, bool hasCustomDotSettings)
         {
             var sb = new StringBuilder();
             var buildTypesDir = Path.Combine(outputDir, "buildTypes");
@@ -219,6 +220,10 @@ namespace Es.Tcg
             sb.AppendLine("      <runner id=\"RUNNER_3\" name=\"\" type=\"dotnet-tools-inspectcode\">");
             sb.AppendLine("        <parameters>");
             sb.AppendLine($"          <param name=\"dotnet-tools-inspectcode.solution\" value=\"{sln}\" />");
+
+            if (hasCustomDotSettings)
+                sb.AppendLine($"          <param name=\"dotnet-tools-inspectcodeCustomSettingsProfile\" value=\"{sln}.DotSettings\" />");
+
             sb.AppendLine("          <param name=\"teamcity.step.mode\" value=\"default\" />");
             sb.AppendLine("        </parameters>");
             sb.AppendLine("      </runner>");

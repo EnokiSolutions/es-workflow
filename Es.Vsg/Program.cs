@@ -45,7 +45,7 @@ namespace Es.Vsg
 
             var slnJson = JObject.Parse(File.ReadAllText(SlnVsgFilename));
             var slnFilename = slnJson["name"].ToObject<string>() + ".sln";
-            var hasContracts = slnJson.GetValue("contracts", false);
+            var hasContracts = slnJson.GetValue("contracts", true);
             Console.WriteLine("{0}", slnFilename);
 
             var packageInfos = slnJson["packages"].ToObject<JArray>().Select(x => x.ToObject<string[]>()).ToArray();
@@ -215,7 +215,7 @@ using System.Runtime.InteropServices;
                 sb.AppendLine("    <CodeContractsExtraAnalysisOptions />");
                 sb.AppendLine("    <CodeContractsSQLServerOption />");
                 sb.AppendLine("    <CodeContractsBaseLineFile />");
-                sb.AppendLine("    <CodeContractsCacheAnalysisResults>True</CodeContractsCacheAnalysisResults>");
+                sb.AppendLine("    <CodeContractsCacheAnalysisResults>False</CodeContractsCacheAnalysisResults>");
                 sb.AppendLine(
                     "    <CodeContractsSkipAnalysisIfCannotConnectToCache>False</CodeContractsSkipAnalysisIfCannotConnectToCache>");
                 sb.AppendLine("    <CodeContractsFailBuildOnWarnings>True</CodeContractsFailBuildOnWarnings>");
@@ -278,7 +278,7 @@ using System.Runtime.InteropServices;
                 sb.AppendLine("    <CodeContractsExtraAnalysisOptions />");
                 sb.AppendLine("    <CodeContractsSQLServerOption />");
                 sb.AppendLine("    <CodeContractsBaseLineFile />");
-                sb.AppendLine("    <CodeContractsCacheAnalysisResults>True</CodeContractsCacheAnalysisResults>");
+                sb.AppendLine("    <CodeContractsCacheAnalysisResults>False</CodeContractsCacheAnalysisResults>");
                 sb.AppendLine("    <CodeContractsSkipAnalysisIfCannotConnectToCache>False</CodeContractsSkipAnalysisIfCannotConnectToCache>");
                 sb.AppendLine("    <CodeContractsFailBuildOnWarnings>True</CodeContractsFailBuildOnWarnings>");
                 sb.AppendLine("    <CodeContractsBeingOptimisticOnExternal>True</CodeContractsBeingOptimisticOnExternal>");
@@ -338,12 +338,12 @@ using System.Runtime.InteropServices;
             sb.AppendLine("    <None Include=\"App.config\" />");
             sb.AppendLine("  </ItemGroup>");
             sb.AppendLine("  <Import Project=\"$(MSBuildToolsPath)\\Microsoft.CSharp.targets\" />");
-            if (hasContracts)
-            {
-                var ccid = Environment.GetEnvironmentVariable("CodeContractsInstallDir") ?? "C:\\Program Files (x86)\\Microsoft\\Contracts\\";
-                sb.AppendLine(
-                    $"  <Import Project=\"{ccid}MsBuild\\v14.0\\Microsoft.CodeContracts.targets\" />");
-            }
+            //if (hasContracts)
+            //{
+            //    var ccid = Environment.GetEnvironmentVariable("CodeContractsInstallDir") ?? "C:\\Program Files (x86)\\Microsoft\\Contracts\\";
+            //    sb.AppendLine(
+            //        $"  <Import Project=\"{ccid}MsBuild\\v14.0\\Microsoft.CodeContracts.targets\" />");
+            //}
             
             if (outputType == "exe" && _ilMergeExe != null)
             {
