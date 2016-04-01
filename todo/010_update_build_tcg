@@ -1,0 +1,1 @@
+Es.Vsg should update build.tcg with sln name and dotSettings:true if *.sln.DotSettings exists.
