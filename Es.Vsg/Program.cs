@@ -104,6 +104,8 @@ namespace {csProjDir}
             var guid = csProjAndGuid.Value;
 
             var hasTests = File.Exists(Path.Combine(csProjDir + ".Test", CsprojVsgFilename));
+            var hasServer = File.Exists(Path.Combine(csProjDir + ".Server", CsprojVsgFilename));
+            var hasClient = File.Exists(Path.Combine(csProjDir + ".Client", CsprojVsgFilename));
             var notATestPackage = csProjDir.EndsWith(".Test") ? "False" : "True"; // don't enable contract suggestions on test packages
 
             var fuckingUserFile = Path.Combine(csProjDir, csProjDir + ".csproj.user");
@@ -133,6 +135,12 @@ using System.Runtime.InteropServices;
             if (hasTests)
                 assemblyInfoContents += $@"
 [assembly: InternalsVisibleTo(""{csProjDir}.Test"")]";
+            if (hasServer)
+                assemblyInfoContents += $@"
+[assembly: InternalsVisibleTo(""{csProjDir}.Server"")]";
+            if (hasClient)
+                assemblyInfoContents += $@"
+[assembly: InternalsVisibleTo(""{csProjDir}.Client"")]";
             UpdateOnlyIfDifferent(assemblyInfoFile, assemblyInfoContents);
 
             var sb = new StringBuilder();
