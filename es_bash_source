@@ -353,9 +353,7 @@ HERE
 }
 HERE
   cat <<HERE >build.tcg
-{
-  "name":"$name"
-}
+{}
 HERE
   echo "0.0.0" > version.txt
   mkdir $name

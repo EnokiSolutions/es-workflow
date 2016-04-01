@@ -38,6 +38,9 @@ Teamcity 9.1.x Setup
 ** TCG_DIR=C:\TeamCityData\config\projects
 ** TCG_PK=C:\TeamCityData\config\id_rsa (for teamcity user in gitlab)
 * run `es_catcher.sh`
+* edit C:\Windows\System32\config\systemprofile\AppData\Roaming\NuGet\NuGet.Config
+** add `<add key="nuget.es" value="http://nuget.es/api/nuget" />` to `<packageSources>` and `<activePackageSource>`
+
 
 Youtrack Setup
 ---

@@ -172,22 +172,25 @@ namespace Es.Tcg
             var outputDir = EnsureHierarchy(repoPathArray, branch, branchPrefix, branchParentPrefix);
 
             Console.WriteLine("-> {0}", outputDir);
+
             var cjson = JObject.Parse(config);
-            var publish = cjson.GetValue("publish", string.Empty);
-            var name = cjson.GetValue("name", repoPathArray.Last());
-            var sln = cjson.GetValue("sln", name + ".sln");
-            var hasTests = cjson.GetValue("test", true);
-            var hasCustomerDotSettings = cjson.GetValue("dotSettings", false);
 
             if (branch != "master")
                 version = version + "-" + branchPrefix;
 
             ConfigureVcs(outputDir, repo, branch);
-            ConfigureBuild(outputDir, name, sln, version, publish, hasTests, hasCustomerDotSettings);
+            ConfigureBuild(outputDir, cjson, version);
         }
 
-        private static void ConfigureBuild(string outputDir, string name, string sln, string version, string publish, bool hasTests, bool hasCustomDotSettings)
+        private static void ConfigureBuild(string outputDir, JObject cjson, string version)
         {
+            var name = cjson.GetValue("name");
+            var publish = cjson.GetValue("publish", string.Empty);
+            var sln = cjson.GetValue("sln", name + ".sln");
+            var hasTests = cjson.GetValue("test", true);
+            var hasCustomDotSettings = cjson.GetValue("dotSettings", false);
+            var assemblies = cjson.GetValue("assemblies", new string[] { });
+
             var sb = new StringBuilder();
             var buildTypesDir = Path.Combine(outputDir, "buildTypes");
             if (!Directory.Exists(buildTypesDir))
@@ -281,6 +284,7 @@ namespace Es.Tcg
                 sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.includes\" value=\"[*]*\" />");
                 sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.platformBitness\" value=\"x86\" />");
                 sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.platformVersion\" value=\"v2.0\" />");
+                sb.AppendLine($"          <param name=\"dotNetCoverage.dotCover.filters\"><![CDATA[{string.Join("\n",assemblies.Select(x=>"+:"+x))}]]></param>");
                 sb.AppendLine(
                     "          <param name=\"dotNetCoverage.dotCover.attributeFilters\"><![CDATA[-:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute\n-:System.Runtime.CompilerServices.CompilerGeneratedAttribute]]></param>");
                 sb.AppendLine("          <param name=\"dotNetCoverage.tool\" value=\"dotcover\" />");
