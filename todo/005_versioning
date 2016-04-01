@@ -1,10 +1,10 @@
 Update sln.vsg ref versions
 
 	To latest:
-		es-vsg -u
+		Es.Vsg -u
 	To latest minor:
-		es-vsg -um
+		Es.Vsg -um
 	To latest patch:
-		es-vsg -up
+		Es.Vsg -up
 	Based on current branch
-		es-vsg -ub branchPrefix
+		Es.Vsg -u -b branchPrefix

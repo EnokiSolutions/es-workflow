@@ -1,0 +1,2 @@
+enable assembly signing
+	Es.Vsg -s <key.snk>

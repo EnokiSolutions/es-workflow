@@ -104,7 +104,7 @@ namespace {csProjDir}
             var guid = csProjAndGuid.Value;
 
             var hasTests = File.Exists(Path.Combine(csProjDir + ".Test", CsprojVsgFilename));
-            var contractSuggestions = csProjDir.EndsWith(".Test") ? "False" : "True"; // don't enable contract suggestions on test packages
+            var notATestPackage = csProjDir.EndsWith(".Test") ? "False" : "True"; // don't enable contract suggestions on test packages
 
             var fuckingUserFile = Path.Combine(csProjDir, csProjDir + ".csproj.user");
             if (File.Exists(fuckingUserFile))
@@ -181,13 +181,12 @@ using System.Runtime.InteropServices;
                 sb.AppendLine("    <CodeContractsRuntimeCallSiteRequires>True</CodeContractsRuntimeCallSiteRequires>");
                 sb.AppendLine("    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>");
                 sb.AppendLine("    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>");
-                sb.AppendLine("    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>");
+                sb.AppendLine($"    <CodeContractsNonNullObligations>{notATestPackage}</CodeContractsNonNullObligations>");
                 sb.AppendLine("    <CodeContractsBoundsObligations>True</CodeContractsBoundsObligations>");
                 sb.AppendLine("    <CodeContractsArithmeticObligations>True</CodeContractsArithmeticObligations>");
                 sb.AppendLine("    <CodeContractsEnumObligations>True</CodeContractsEnumObligations>");
                 sb.AppendLine("    <CodeContractsRedundantAssumptions>True</CodeContractsRedundantAssumptions>");
-                sb.AppendLine(
-                    "    <CodeContractsAssertsToContractsCheckBox>True</CodeContractsAssertsToContractsCheckBox>");
+                sb.AppendLine($"    <CodeContractsAssertsToContractsCheckBox>{notATestPackage}</CodeContractsAssertsToContractsCheckBox>");
                 sb.AppendLine("    <CodeContractsRedundantTests>True</CodeContractsRedundantTests>");
                 sb.AppendLine(
                     "    <CodeContractsMissingPublicRequiresAsWarnings>True</CodeContractsMissingPublicRequiresAsWarnings>");
@@ -198,12 +197,12 @@ using System.Runtime.InteropServices;
                 sb.AppendLine(
                     "    <CodeContractsInferEnsuresAutoProperties>True</CodeContractsInferEnsuresAutoProperties>");
                 sb.AppendLine("    <CodeContractsInferObjectInvariants>True</CodeContractsInferObjectInvariants>");
-                sb.AppendLine($"    <CodeContractsSuggestAssumptions>{contractSuggestions}</CodeContractsSuggestAssumptions>");
-                sb.AppendLine($"    <CodeContractsSuggestAssumptionsForCallees>{contractSuggestions}</CodeContractsSuggestAssumptionsForCallees>");
-                sb.AppendLine($"    <CodeContractsSuggestRequires>{contractSuggestions}</CodeContractsSuggestRequires>");
-                sb.AppendLine("    <CodeContractsNecessaryEnsures>True</CodeContractsNecessaryEnsures>");
-                sb.AppendLine($"    <CodeContractsSuggestObjectInvariants>{contractSuggestions}</CodeContractsSuggestObjectInvariants>");
-                sb.AppendLine($"    <CodeContractsSuggestReadonly>{contractSuggestions}</CodeContractsSuggestReadonly>");
+                sb.AppendLine($"    <CodeContractsSuggestAssumptions>{notATestPackage}</CodeContractsSuggestAssumptions>");
+                sb.AppendLine($"    <CodeContractsSuggestAssumptionsForCallees>{notATestPackage}</CodeContractsSuggestAssumptionsForCallees>");
+                sb.AppendLine($"    <CodeContractsSuggestRequires>{notATestPackage}</CodeContractsSuggestRequires>");
+                sb.AppendLine($"    <CodeContractsNecessaryEnsures>{notATestPackage}</CodeContractsNecessaryEnsures>");
+                sb.AppendLine($"    <CodeContractsSuggestObjectInvariants>{notATestPackage}</CodeContractsSuggestObjectInvariants>");
+                sb.AppendLine($"    <CodeContractsSuggestReadonly>{notATestPackage}</CodeContractsSuggestReadonly>");
                 sb.AppendLine("    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>");
                 sb.AppendLine("    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>");
                 sb.AppendLine("    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>");
@@ -212,7 +211,7 @@ using System.Runtime.InteropServices;
                 sb.AppendLine("    <CodeContractsCustomRewriterClass />");
                 sb.AppendLine("    <CodeContractsLibPaths />");
                 sb.AppendLine("    <CodeContractsExtraRewriteOptions />");
-                sb.AppendLine("    <CodeContractsExtraAnalysisOptions />");
+                sb.AppendLine("    <CodeContractsExtraAnalysisOptions>-outputwarnmasks</CodeContractsExtraAnalysisOptions>");
                 sb.AppendLine("    <CodeContractsSQLServerOption />");
                 sb.AppendLine("    <CodeContractsBaseLineFile />");
                 sb.AppendLine("    <CodeContractsCacheAnalysisResults>False</CodeContractsCacheAnalysisResults>");
@@ -249,12 +248,12 @@ using System.Runtime.InteropServices;
                 sb.AppendLine("    <CodeContractsRuntimeCallSiteRequires>True</CodeContractsRuntimeCallSiteRequires>");
                 sb.AppendLine("    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>");
                 sb.AppendLine("    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>");
-                sb.AppendLine("    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>");
+                sb.AppendLine($"    <CodeContractsNonNullObligations>{notATestPackage}</CodeContractsNonNullObligations>");
                 sb.AppendLine("    <CodeContractsBoundsObligations>True</CodeContractsBoundsObligations>");
                 sb.AppendLine("    <CodeContractsArithmeticObligations>True</CodeContractsArithmeticObligations>");
                 sb.AppendLine("    <CodeContractsEnumObligations>True</CodeContractsEnumObligations>");
                 sb.AppendLine("    <CodeContractsRedundantAssumptions>True</CodeContractsRedundantAssumptions>");
-                sb.AppendLine("    <CodeContractsAssertsToContractsCheckBox>True</CodeContractsAssertsToContractsCheckBox>");
+                sb.AppendLine($"    <CodeContractsAssertsToContractsCheckBox>{notATestPackage}</CodeContractsAssertsToContractsCheckBox>");
                 sb.AppendLine("    <CodeContractsRedundantTests>True</CodeContractsRedundantTests>");
                 sb.AppendLine("    <CodeContractsMissingPublicRequiresAsWarnings>True</CodeContractsMissingPublicRequiresAsWarnings>");
                 sb.AppendLine("    <CodeContractsMissingPublicEnsuresAsWarnings>True</CodeContractsMissingPublicEnsuresAsWarnings>");
@@ -262,12 +261,12 @@ using System.Runtime.InteropServices;
                 sb.AppendLine("    <CodeContractsInferEnsures>True</CodeContractsInferEnsures>");
                 sb.AppendLine("    <CodeContractsInferEnsuresAutoProperties>True</CodeContractsInferEnsuresAutoProperties>");
                 sb.AppendLine("    <CodeContractsInferObjectInvariants>True</CodeContractsInferObjectInvariants>");
-                sb.AppendLine($"    <CodeContractsSuggestAssumptions>{contractSuggestions}</CodeContractsSuggestAssumptions>");
-                sb.AppendLine($"    <CodeContractsSuggestAssumptionsForCallees>{contractSuggestions}</CodeContractsSuggestAssumptionsForCallees>");
-                sb.AppendLine($"    <CodeContractsSuggestRequires>{contractSuggestions}</CodeContractsSuggestRequires>");
-                sb.AppendLine("    <CodeContractsNecessaryEnsures>True</CodeContractsNecessaryEnsures>");
-                sb.AppendLine($"    <CodeContractsSuggestObjectInvariants>{contractSuggestions}</CodeContractsSuggestObjectInvariants>");
-                sb.AppendLine($"    <CodeContractsSuggestReadonly>{contractSuggestions}</CodeContractsSuggestReadonly>");
+                sb.AppendLine($"    <CodeContractsSuggestAssumptions>{notATestPackage}</CodeContractsSuggestAssumptions>");
+                sb.AppendLine($"    <CodeContractsSuggestAssumptionsForCallees>{notATestPackage}</CodeContractsSuggestAssumptionsForCallees>");
+                sb.AppendLine($"    <CodeContractsSuggestRequires>{notATestPackage}</CodeContractsSuggestRequires>");
+                sb.AppendLine($"    <CodeContractsNecessaryEnsures>{notATestPackage}</CodeContractsNecessaryEnsures>");
+                sb.AppendLine($"    <CodeContractsSuggestObjectInvariants>{notATestPackage}</CodeContractsSuggestObjectInvariants>");
+                sb.AppendLine($"    <CodeContractsSuggestReadonly>{notATestPackage}</CodeContractsSuggestReadonly>");
                 sb.AppendLine("    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>");
                 sb.AppendLine("    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>");
                 sb.AppendLine("    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>");
@@ -275,7 +274,7 @@ using System.Runtime.InteropServices;
                 sb.AppendLine("    <CodeContractsCustomRewriterClass />");
                 sb.AppendLine("    <CodeContractsLibPaths />");
                 sb.AppendLine("    <CodeContractsExtraRewriteOptions />");
-                sb.AppendLine("    <CodeContractsExtraAnalysisOptions />");
+                sb.AppendLine("    <CodeContractsExtraAnalysisOptions>-outputwarnmasks</CodeContractsExtraAnalysisOptions>");
                 sb.AppendLine("    <CodeContractsSQLServerOption />");
                 sb.AppendLine("    <CodeContractsBaseLineFile />");
                 sb.AppendLine("    <CodeContractsCacheAnalysisResults>False</CodeContractsCacheAnalysisResults>");

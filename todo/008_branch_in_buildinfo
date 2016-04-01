@@ -1,0 +1,8 @@
+Add branch info to buildinfo
+	Es.Vsg -b branchprefix
+
+Add buildno to buildinfo
+	if $BUILD_NUMBER is set in the environment
+
+Add vcs info to buildinfo
+	if $VCS_NUMBER is set in the environment
