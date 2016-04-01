@@ -1,0 +1,1 @@
+Change Nup (and Tcg) to only take in the brach prefix and use version.txt for the version number.
