@@ -282,7 +282,7 @@ namespace Es.Tcg
                 sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.platformBitness\" value=\"x86\" />");
                 sb.AppendLine("          <param name=\"dotNetCoverage.PartCover.platformVersion\" value=\"v2.0\" />");
                 sb.AppendLine(
-                    "          <param name=\"dotNetCoverage.dotCover.attributeFilters\"><![CDATA[-:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute\n-:System.Runtime.CompilerServices.CompilerGeneratedAttribute></param>");
+                    "          <param name=\"dotNetCoverage.dotCover.attributeFilters\"><![CDATA[-:System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute\n-:System.Runtime.CompilerServices.CompilerGeneratedAttribute]]></param>");
                 sb.AppendLine("          <param name=\"dotNetCoverage.tool\" value=\"dotcover\" />");
                 sb.AppendLine("          <param name=\"dotNetTestRunner.Type\" value=\"NUnit\" />");
                 sb.AppendLine("          <param name=\"nunit_enabled\" value=\"checked\" />");
