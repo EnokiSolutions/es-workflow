@@ -45,7 +45,7 @@ namespace Es.Vsg
 
             var slnJson = JObject.Parse(File.ReadAllText(SlnVsgFilename));
             var slnFilename = slnJson["name"].ToObject<string>() + ".sln";
-            var hasContracts = slnJson.GetValue("contracts", true);
+            var hasContracts = slnJson.GetValue("contracts", false);
             Console.WriteLine("{0}", slnFilename);
 
             var packageInfos = slnJson["packages"].ToObject<JArray>().Select(x => x.ToObject<string[]>()).ToArray();

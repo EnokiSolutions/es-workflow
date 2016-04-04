@@ -18,7 +18,7 @@ GitLab setup
 * `ln -s ~/es-workflow/es_watcher.sh es_watcher.sh`
 * `chmod 755 es_watcher.sh`
 * edit `es_watcher.sh` and set the teamcity hostname to your teamcity server hostname
-* edit `/opt/gitlab/embedded/service/gitlab-shell/hooks/post-receive`
+* edit `/opt/gitlab/embedded/service/gitlab-shell/hooks/post-receive` (this has to be done after every update)
 * add above the exit 0 line```
   `echo -e"\n" | nc localhost 3333`
   exit 0
