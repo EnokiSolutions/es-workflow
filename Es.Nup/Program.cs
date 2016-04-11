@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime;
 using Es.ToolsCommon;
 using Newtonsoft.Json.Linq;
@@ -45,7 +46,7 @@ nuspec file
 
         public static void Main(string[] args)
         {
-            Console.WriteLine("Es.Nup {0}", BuildInfo.Version);
+            Console.WriteLine("{0} {1}", Assembly.GetExecutingAssembly().GetName().Name, BuildInfo.Version);
 
             if (args.Length < 1)
             {

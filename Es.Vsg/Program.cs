@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using Es.ToolsCommon;
 using Newtonsoft.Json.Linq;
@@ -21,7 +22,7 @@ namespace Es.Vsg
 
         public static void Main(string[] args)
         {
-            Console.WriteLine("Es.Vsg {0}",BuildInfo.Version);
+            Console.WriteLine("{0} {1}",Assembly.GetExecutingAssembly().GetName().Name, BuildInfo.Version);
 
             if (!File.Exists(SlnVsgFilename))
             {

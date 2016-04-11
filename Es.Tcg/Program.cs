@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using Es.ToolsCommon;
@@ -20,7 +21,7 @@ namespace Es.Tcg
 
         public static void Main(string[] args)
         {
-            Console.Out.WriteLine("Es.Tcg {0}",BuildInfo.Version);
+            Console.WriteLine("{0} {1}", Assembly.GetExecutingAssembly().GetName().Name, BuildInfo.Version);
             var textReader = Console.In;
             if (args.Length == 1)
                 textReader = File.OpenText(args[0]);
