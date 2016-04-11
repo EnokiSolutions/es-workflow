@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime;
 using Es.ToolsCommon;
 using Newtonsoft.Json.Linq;
 
@@ -50,8 +49,8 @@ nuspec file
 
             if (args.Length < 1)
             {
-                Console.WriteLine("no version given on commandline");
-                Environment.Exit(-2);
+                Console.WriteLine("no branch given on commandline");
+                Environment.Exit(-200);
             }
             var enviromentPath = Environment.GetEnvironmentVariable("PATH") ?? "";
             var paths = enviromentPath.Split(';');
@@ -64,13 +63,18 @@ nuspec file
                 Environment.Exit(-1);
             }
 
-            var version = args[0];
+            var branch = args[0];
+            var version = File.Exists("version.txt") ? File.ReadAllLines("version.txt")[0] : "0.0.0";
             var apiKey = Environment.GetEnvironmentVariable("NUP_API_KEY") ?? "LETMEIN";
             var nugetUrl = Environment.GetEnvironmentVariable("NUP_URI") ?? "http://nuget.rhi/api";
             var buildNo = Environment.GetEnvironmentVariable("BUILD_NUMBER");
 
-            if (version.Contains("-") && !string.IsNullOrWhiteSpace(buildNo))
-                version += "-" + buildNo;
+            if (branch != "master")
+            {
+                version += "-" + branch;
+                if (!string.IsNullOrWhiteSpace(buildNo))
+                    version += "-" + buildNo;
+            }
 
             foreach (var dir in Directory.EnumerateDirectories("."))
             {

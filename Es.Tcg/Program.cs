@@ -180,10 +180,10 @@ namespace Es.Tcg
                 version = version + "-" + branchPrefix;
 
             ConfigureVcs(outputDir, repo, branch);
-            ConfigureBuild(outputDir, cjson, version);
+            ConfigureBuild(outputDir, cjson, version, branchPrefix);
         }
 
-        private static void ConfigureBuild(string outputDir, JObject cjson, string version)
+        private static void ConfigureBuild(string outputDir, JObject cjson, string version, string branchPrefix)
         {
             var name = cjson.GetValue("name");
             var publish = cjson.GetValue("publish", string.Empty);
@@ -303,7 +303,7 @@ namespace Es.Tcg
             sb.AppendLine("      <runner id=\"RUNNER_6\" name=\"Nuget Package and Push\" type=\"simpleRunner\">");
             sb.AppendLine("        <parameters>");
             sb.AppendLine("          <param name=\"command.executable\" value=\"es.nup.exe\" />");
-            sb.AppendLine($"          <param name=\"command.parameters\" value=\"{version}\" />");
+            sb.AppendLine($"          <param name=\"command.parameters\" value=\"{branchPrefix}\" />");
             sb.AppendLine("          <param name=\"teamcity.step.mode\" value=\"default\" />");
             sb.AppendLine("        </parameters>");
             sb.AppendLine("      </runner>");
