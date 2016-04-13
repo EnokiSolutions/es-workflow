@@ -4,6 +4,7 @@
   "nunit.framework",
   "Newtonsoft.Json",
   "System",
-  "System.Core"
+  "System.Core",
+  "System.ServiceProcess"
  ]
 }
