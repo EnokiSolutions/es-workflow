@@ -1,7 +1,7 @@
 {
  "refs": [
   "Es.ToolsCommon",
-  "nunit.framework",
+  "ICSharpCode.SharpZipLib",
   "Newtonsoft.Json",
   "System",
   "System.Core",

@@ -58,14 +58,22 @@ namespace Es.Pak
                 Environment.Exit(-1);
             }
 
-            var baseName = Path.GetFileNameWithoutExtension(pakFile) + "." + version;
+            var baseFile = Path.GetFileNameWithoutExtension(pakFile);
+
+            if (baseFile.Contains("-"))
+            {
+                Console.WriteLine($"ERROR: no hypens allowed in package names! ${pakFile}");
+                Environment.Exit(-2);
+            }
+
+            var baseName = baseFile + "-v" + version;
             var fso = File.Create(baseName + ".zip");
             var zf = new ZipOutputStream(fso) {IsStreamOwner = true};
             zf.SetLevel(9);
             
             var meta = pakJson.GetValue("meta");
             var metaData = Encoding.UTF8.GetBytes(meta.ToString(Formatting.Indented));
-            var mze = new ZipEntry(baseName + "/meta.json")
+            var mze = new ZipEntry(baseName + $"/{baseName}.meta.json")
             {
                 Size = metaData.Length,
                 DateTime = exeFi.LastWriteTime
