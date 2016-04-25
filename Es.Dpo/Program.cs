@@ -13,7 +13,7 @@ namespace Es.Dpo
         {
             _id = Assembly.GetExecutingAssembly().GetName().Name;
             Console.WriteLine("{0} {1}", _id, BuildInfo.Version);
-            var host = Environment.GetEnvironmentVariable("DPO_HOST") ?? "dpo.rhi";
+            var host = Environment.GetEnvironmentVariable("DPO_HOST") ?? "dpo.es";
             var dir = Environment.GetEnvironmentVariable("DPO_DIR") ?? "./dpo";
             var key = Environment.GetEnvironmentVariable("DPO_KEY") ?? "ASDF";
 
