@@ -61,17 +61,15 @@ If you want to try out everything on a single box using fake hostnames
 * Install virtualbox and setup a centos7 vm using bridged networking
 * Install gitlab
 * run `gitlab-ctl reconfigure`
-* edit /opt/gitlab/embedded/service/gitlab-rails/config/gitlab.yml and change the production host to `gitlab.es`
+* edit `/etc/gitlab/gitlab.rb` and add `external_url 'http://gitlib.es'`
 * run `gitlab-ctl reconfigure` again
 * Install three virtual loopback devices, disable ipv6, and assign one to an ipv4 static address of 172.16.0.1, one to 172.16.0.2, and one to 172.16.0.3 (subnet mask is 255.240.0.0, use 8.8.8.8 and 8.8.4.4 for DNS)
 * Edit C:\Windows\system32\drivers\etc\hosts
 * alias
-```
-172.16.0.1	nuget.es
-172.16.0.2	teamcity.es
-172.16.0.3	youtrack.es
-<ipaddr of virtual machine running gitlab>	gitlab.es
-```
+    172.16.0.1	nuget.es
+    172.16.0.2	teamcity.es
+    172.16.0.3	youtrack.es
+    <ipaddr of virtual machine running gitlab>	gitlab.es
 * Since you'll be running IIS (for the nuget server) you need to restrict IIS to using only one IP address. Run ```netsh http add iplisten 172.16.0.1``` as administrator to do this.
 * When installing teamcity use port 80 and the default paths, but edit the serverUrl to http://teamcity.es:80 use the system account, and don't start the services.
 * Edit the C:\TeamCity\conf\server.xml file and add the attribute `address="172.16.0.2"` to the `<Connector` node
