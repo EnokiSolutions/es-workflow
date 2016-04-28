@@ -1,7 +1,6 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-
 [assembly: AssemblyTitle("Es.DnsProxy")]
 [assembly: AssemblyProduct("Es.DnsProxy")]
 [assembly: AssemblyCopyright("Copyright © 2016")]

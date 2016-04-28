@@ -27,6 +27,7 @@ namespace Es.DnsProxy
 
         private readonly IPEndPoint _primaryDnsAddress;
         private readonly Task[] _tasks = new Task[NumTasks];
+        private static readonly DateTime EndOfTime = DateTime.MaxValue.Subtract(TimeSpan.FromDays(1));
 
         public DnsProxyServer(string dir, Action<object> onError, Action<object> onLog)
         {
@@ -95,11 +96,10 @@ namespace Es.DnsProxy
         public void DumpBuffer(byte[] buffer, int n)
         {
             const int perLine = 16;
-            for (var i = 0; i < n; ++i)
+            for (var i = 0; i < n; i += perLine)
             {
                 var t = i + perLine > n ? n - i : perLine;
                 _onLog?.Invoke(string.Join(" ", buffer.Skip(i).Take(t).Select(b => b.ToString("X2"))));
-                i += perLine;
             }
         }
 
@@ -108,6 +108,7 @@ namespace Es.DnsProxy
             try
             {
                 var s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.IP);
+                IgnoreConnReset(s);
                 s.Bind(new IPEndPoint(IPAddress.Any, DnsPort));
 
                 var buffer = new byte[512];
@@ -115,6 +116,10 @@ namespace Es.DnsProxy
                 while (!token.IsCancellationRequested)
                 {
                     var rf = await ReceiveFrom(s, buffer);
+
+                    if (rf==null)
+                        continue;
+
                     var n = rf.N;
                     var remoteEp = rf.RemoteEp;
 
@@ -134,6 +139,17 @@ namespace Es.DnsProxy
             catch (Exception ex)
             {
                 _onError(ex.ToString());
+            }
+        }
+
+        private static void IgnoreConnReset(Socket s)
+        {
+            const uint IOC_IN = 0x80000000;
+            const uint IOC_VENDOR = 0x18000000;
+            const uint SIO_UDP_CONNRESET = IOC_IN | IOC_VENDOR | 12;
+            unchecked
+            {
+                s.IOControl((int) SIO_UDP_CONNRESET, new byte[] {0}, null);
             }
         }
 
@@ -157,29 +173,44 @@ namespace Es.DnsProxy
                 }
             }
 
+            var repliedAlready = false;
             if (ce?.Response != null)
             {
                 // copy over qId
                 ce.Response[0] = buffer[0];
                 ce.Response[1] = buffer[1];
 
-                _onLog($"SendTo {remoteEp}");
+                _onLog($"CACHED SendTo {remoteEp}");
                 DumpBuffer(ce.Response, ce.Response.Length);
 
                 await SendTo(s, ce.Response, ce.Response.Length, remoteEp);
 
+                repliedAlready = true;
                 var now = DateTime.Now;
 
-                if (now.Subtract(ce.LastUpdated) < _cacheTimeout)
+                var timeSpan = now.Subtract(ce.LastUpdated);
+                if (timeSpan < _cacheTimeout)
+                {
+                    _onLog($"Skipped relookup, cache entry only {timeSpan.TotalSeconds}s old");
                     return;
+                }
             }
 
-            var queryId = (ushort) hash;
-            _outstandingQueries[queryId] = hash;
-            var originalQueryId = (ushort) ((buffer[0] << 8) | buffer[1]);
-            var cacheEntry = new CacheEntry(hash);
-            cacheEntry.Requesters.Add(Tuple.Create(originalQueryId, remoteEp));
-            _cacheEntries[hash] = cacheEntry;
+            if (ce == null)
+            {
+                ce = new CacheEntry(hash);
+            }
+
+            var queryId = (ushort)hash;
+
+            if (!repliedAlready)
+            {
+                _outstandingQueries[queryId] = hash;
+                var originalQueryId = (ushort)((buffer[0] << 8) | buffer[1]);
+
+                ce.Requesters.Add(Tuple.Create(originalQueryId, remoteEp));
+                _cacheEntries[hash] = ce;
+            }
 
             // try to resolve it
             buffer[0] = (byte) (queryId >> 8);
@@ -217,7 +248,7 @@ namespace Es.DnsProxy
 
                 // postfix matches, create cache entry with pre-populated response.
 
-                var ce = new CacheEntry(hash);
+                var ce = new CacheEntry(hash, EndOfTime); // never expire
 
                 buffer[2] = 0x81; // response
                 buffer[3] = 0x80; // rescursion abailable
@@ -277,25 +308,40 @@ namespace Es.DnsProxy
             ce.Response = buffer.Take(n).ToArray();
         }
 
-        private static async Task SendTo(Socket s, byte[] buffer, int length, EndPoint remoteEp)
+        private async Task SendTo(Socket s, byte[] buffer, int length, EndPoint remoteEp)
         {
-            var tcs = new TaskCompletionSource<int>(s);
-            s.BeginSendTo(buffer, 0, length, SocketFlags.None, remoteEp,
-                iar => { tcs.SetResult(s.EndSendTo(iar)); },
-                tcs);
-            await tcs.Task;
+            try
+            {
+                var tcs = new TaskCompletionSource<int>(s);
+                s.BeginSendTo(buffer, 0, length, SocketFlags.None, remoteEp,
+                    iar => { tcs.SetResult(s.EndSendTo(iar)); },
+                    tcs);
+                await tcs.Task;
+            }
+            catch (Exception ex)
+            {
+                _onLog($"{ex}");
+            }
         }
 
-        private static async Task<RecvResult> ReceiveFrom(Socket s, byte[] buffer)
+        private async Task<RecvResult> ReceiveFrom(Socket s, byte[] buffer)
         {
-            EndPoint remoteEp = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort);
-            var tcs = new TaskCompletionSource<int>(s);
+            try
+            {
+                EndPoint remoteEp = new IPEndPoint(IPAddress.Any, DnsPort);
+                var tcs = new TaskCompletionSource<int>(s);
 
-            s.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref remoteEp,
-                iar => { tcs.SetResult(s.EndReceiveFrom(iar, ref remoteEp)); }, tcs);
+                s.BeginReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref remoteEp,
+                    iar => { tcs.SetResult(s.EndReceiveFrom(iar, ref remoteEp)); }, tcs);
 
-            var n = await tcs.Task;
-            return new RecvResult {N = n, RemoteEp = remoteEp};
+                var n = await tcs.Task;
+                return new RecvResult {N = n, RemoteEp = remoteEp};
+            }
+            catch (Exception ex)
+            {
+                _onLog($"{ex}");
+            }
+            return null;
         }
 
         private sealed class CacheEntry
@@ -309,6 +355,12 @@ namespace Es.DnsProxy
             {
                 Hash = hash;
                 LastUpdated = DateTime.Now;
+                Response = null;
+            }
+            public CacheEntry(ulong hash, DateTime lastUpdated)
+            {
+                Hash = hash;
+                LastUpdated = lastUpdated;
                 Response = null;
             }
         }
