@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -48,6 +49,15 @@ namespace Es.Upd
 
         public async Task Run(CancellationToken cancellationToken)
         {
+            // todo:
+            //  prime the directory with $UPD_DIR/installs
+            //  general structure of installs:
+            //     .../installs/name/uuid/...
+            //                      /labels.txt (one per line: label:uuid\n)
+            //
+            //  default is the label '_default_'
+            //  versions are prefixed with '_v_'
+
             _cts = new CancellationTokenSource();
             CreateDirectoryRecursive(_dir);
             File.WriteAllText($"{_dir}/pid", CurrentPid().ToString());
@@ -141,41 +151,56 @@ namespace Es.Upd
                 return;
             }
 
-            if (!pathAndQuery.Contains("?"))
+            if (!pathAndQuery.Contains("?") || !pathAndQuery.Contains($"key={_key}")) 
             {
-                var file = pathAndQuery.After("upd/");
+                resp.StatusCode = 400;
+                resp.Close();
+                return;
+            }
 
-                if (!string.IsNullOrWhiteSpace(file))
-                {
-                    var tuple = await ParseFileRequest(file, resp);
-                    if (tuple == null)
-                        return;
+            var args = pathAndQuery.After("?").Split('&').Select(x=>x.Split('=')).Where(x=>x.Length==2).ToDictionary(x=>x[0],x=>x[1]);
+            var cmd = pathAndQuery.After("upd/").Before("?").TrimEnd('/');
 
-                    var path = tuple.Item1;
+            switch (cmd)
+            {
+                case "install":
+                    if (!(args.ContainsKey("name") && args.ContainsKey("version")))
+                        goto default;
+                    break;
+                case "enable":
+                    if (!(args.ContainsKey("name") && args.ContainsKey("version")))
+                        goto default;
+                    break;
+                case "disable":
+                    if (!(args.ContainsKey("name") && args.ContainsKey("version")))
+                        goto default;
 
-                    var fi = new FileInfo(path + "/" + file);
-                    if (!fi.Exists)
-                    {
-                        var respData = Encoding.UTF8.GetBytes("NOT FOUND");
-                        resp.ContentType = "text/plain";
-                        resp.StatusCode = 404;
-                        await resp.OutputStream.WriteAsync(respData, 0, respData.Length, _cts.Token);
-                        resp.Close();
-                        return;
-                    }
+                    break;
+                case "default":
+                    if (!(args.ContainsKey("name") && args.ContainsKey("version")))
+                        goto default;
 
-                    resp.ContentType = "application/octet-stream";
-                    resp.Headers.Add("Content-Disposition", $"attachment; filename=\"{file}\"");
-                    resp.Headers.Add("Content-Transfer-Encoding", "binary");
-                    resp.ContentLength64 = fi.Length;
-
-                    using (var ifs = fi.OpenRead())
-                    {
-                        await ifs.CopyToAsync(resp.OutputStream);
-                    }
+                    break;
+                case "addlabel":
+                    if (!(args.ContainsKey("name") && args.ContainsKey("version") && args.ContainsKey("label")))
+                        goto default;
+                    break;
+                case "rmlabel":
+                    if (!(args.ContainsKey("name") && args.ContainsKey("label")))
+                        goto default;
+                    break;
+                case "ls":
+                    break;
+                case "cfg":
+                    break;
+                case "locate":
+                    if (!args.ContainsKey("name"))
+                        goto default;
+                    break;
+                default:
+                    resp.StatusCode = 400;
                     resp.Close();
                     return;
-                }
             }
         }
 

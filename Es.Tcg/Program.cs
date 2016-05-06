@@ -166,7 +166,7 @@ namespace Es.Tcg
             Console.WriteLine("Configuring {0} {1}", repo, branch);
 
             var repoPath = repo.Replace(".git", "").Split(':')[1];
-            var repoPathArray = repoPath.Split('/');
+            var repoPathArray = repoPath.Split('/').Select(x=>x.Replace("-","_")).ToArray();
             var branchPrefix = BranchPrefix(branch);
             var branchParentPrefix = BranchParentPrefix(branch);
 

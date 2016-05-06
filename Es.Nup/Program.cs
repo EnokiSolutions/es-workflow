@@ -62,7 +62,7 @@ nuspec file
                 Console.WriteLine("nuget not found in path");
                 Environment.Exit(-1);
             }
-
+            
             var branch = args[0];
             var version = File.Exists("version.txt") ? File.ReadAllLines("version.txt")[0] : "0.0.0";
             var apiKey = Environment.GetEnvironmentVariable("NUP_API_KEY") ?? "LETMEIN";

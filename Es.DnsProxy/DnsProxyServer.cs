@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -26,7 +27,7 @@ namespace Es.DnsProxy
         private readonly Dictionary<ushort, ulong> _outstandingQueries = new Dictionary<ushort, ulong>();
 
         private readonly IPEndPoint _primaryDnsAddress;
-        private readonly Task[] _tasks = new Task[NumTasks];
+
         private static readonly DateTime EndOfTime = DateTime.MaxValue.Subtract(TimeSpan.FromDays(1));
 
         public DnsProxyServer(string dir, Action<object> onError, Action<object> onLog)
@@ -129,6 +130,8 @@ namespace Es.DnsProxy
                     if (remoteEp.Equals(_primaryDnsAddress))
                     {
                         await HandleReplyFromPrimaryDnsServer(buffer, n, s);
+
+                        _onLog($"# outstanding {_cacheEntries.Sum(x=>x.Value.Requests.Count)}");
                     }
                     else
                     {
@@ -185,6 +188,10 @@ namespace Es.DnsProxy
 
                 await SendTo(s, ce.Response, ce.Response.Length, remoteEp);
 
+                // send again
+                await Task.Delay(1);
+                await SendTo(s, ce.Response, ce.Response.Length, remoteEp);
+
                 repliedAlready = true;
                 var now = DateTime.Now;
 
@@ -208,7 +215,7 @@ namespace Es.DnsProxy
                 _outstandingQueries[queryId] = hash;
                 var originalQueryId = (ushort)((buffer[0] << 8) | buffer[1]);
 
-                ce.Requesters.Add(Tuple.Create(originalQueryId, remoteEp));
+                ce.Requests.Add(new Request(originalQueryId, remoteEp));
                 _cacheEntries[hash] = ce;
             }
 
@@ -237,6 +244,8 @@ namespace Es.DnsProxy
             }
 
             var maxLen = n - 16; // offset 12 to n-4
+            DumpSingleARequest(buffer, n);
+
             foreach (var ho in _hostOverrides)
             {
                 if (ho.hostPostfix.Length > maxLen)
@@ -275,6 +284,25 @@ namespace Es.DnsProxy
             return null;
         }
 
+        private void DumpSingleARequest(byte[] buffer, int n)
+        {
+            var p = new List<string>();
+            for (var j = 11; j < n - 4;)
+            {
+                var l = (int) buffer[++j];
+                if (l == 0)
+                    break;
+                var s = "";
+                for (var k = 0; k < l; ++k)
+                {
+                    s += (char) buffer[++j];
+                }
+                p.Add(s);
+            }
+            var host = string.Join(".", p);
+            _onLog($"A {host}");
+        }
+
         private async Task HandleReplyFromPrimaryDnsServer(byte[] buffer, int n, Socket s)
         {
             // reply from primary dns server
@@ -290,20 +318,21 @@ namespace Es.DnsProxy
             if (!_cacheEntries.TryGetValue(hash, out ce))
                 return;
 
-            foreach (var r in ce.Requesters)
+            DumpSingleARequest(buffer, n);
+            foreach (var r in ce.Requests)
             {
-                var queryId = r.Item1;
-                var requestedEp = r.Item2;
+                var queryId = r.Qid;
+                var requestedEp = r.Asker;
+                r.Stopwatch.Stop();
 
                 buffer[0] = (byte) (queryId >> 8);
                 buffer[1] = (byte) queryId;
 
-                _onLog($"SendTo {requestedEp}");
-                DumpBuffer(buffer, n);
+                _onLog($"SendTo {requestedEp} {r.Stopwatch.ElapsedMilliseconds}ms");
 
                 await SendTo(s, buffer, n, requestedEp);
             }
-            ce.Requesters.Clear();
+            ce.Requests.Clear();
 
             ce.Response = buffer.Take(n).ToArray();
         }
@@ -344,11 +373,25 @@ namespace Es.DnsProxy
             return null;
         }
 
+        private sealed class Request
+        {
+            public readonly ushort Qid;
+            public readonly EndPoint Asker;
+            public readonly Stopwatch Stopwatch;
+
+            public Request(ushort originalQueryId, EndPoint remoteEp)
+            {
+                Qid = originalQueryId;
+                Asker = remoteEp;
+                Stopwatch = Stopwatch.StartNew();
+            }
+        }
+
         private sealed class CacheEntry
         {
             public readonly ulong Hash;
             public readonly DateTime LastUpdated;
-            public readonly List<Tuple<ushort, EndPoint>> Requesters = new List<Tuple<ushort, EndPoint>>();
+            public readonly List<Request> Requests = new List<Request>();
             public byte[] Response;
 
             public CacheEntry(ulong hash)

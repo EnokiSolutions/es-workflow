@@ -12,9 +12,9 @@ namespace Es.Upd
         {
             // internal:
             //  curl http://upd.es/upd/install?key=key&name=name&version=version[&label=label]"
-            //    e.g. curl http://upd.es/upd/ctl?key=ASDF&install=MyServer&version=v1.0.2-f1p1-2" // no label
-            //    e.g. curl http://upd.es/upd/ctl?key=ASDF&install=MyServer&version=v1.0.2-p1&label=lime" // one label
-            //    e.g. curl http://upd.es/upd/ctl?key=ASDF&install=MyServer&version=v1.0.2-p1&label=lime,p1.lime" // two labels
+            //    e.g. curl http://upd.es/upd/install?key=ASDF&install=MyServer&version=v1.0.2-f1p1-2" // no label
+            //    e.g. curl http://upd.es/upd/install?key=ASDF&install=MyServer&version=v1.0.2-p1&label=lime" // one label
+            //    e.g. curl http://upd.es/upd/install?key=ASDF&install=MyServer&version=v1.0.2-p1&label=lime,p1.lime" // two labels
             //  curl http://upd.es/upd/enable?key=key&name=name&version=version" // turn on
             //  curl http://upd.es/upd/disable?key=key&nane=name&version=version" // turn off
             //  curl http://upd.es/upd/default?key=key&name=name&version=version" // assign as default (for locate w/o label)
@@ -23,17 +23,19 @@ namespace Es.Upd
             //  curl http://upd.es/upd/ls?key=key[&name=name]" // list all or for given name (include # times located bucketed by days, hours?)
             //   -> { all installed packages, enabled|disable, labels pointing to this version ('default' is a special label) }
             //   -> { versions installed for named package, enabled|disable, labels pointing to this version ('default' is a special label) }
-            //  curl http://upd.es/upd/cfg" // dump config info
+            //  curl http://upd.es/upd/cfg?key=key" // dump config info
             //
             // external:
             //  curl "http://upd.es/upd/locate?name=name"
             //  curl "http://upd.es/upd/locate?name=name&label=label" // only one label can be given here.
             //   -> {
-            //        "loc": "/name/v.../" (same server) or "http://host/name/vz.../" (different server),
+            //        "loc": "http://vz...host/name/",
             //        "sx": signed(expiry in seconds from epoch)
             //      }
             //
-            //
+            // restrictions
+            //  - no labels starting with _ allowed.
+            //  - labels and version restricted to /^((?:_v_)?[0-9a-zA-Z\._-]+|_default_)$/
 
 
             _id = Assembly.GetExecutingAssembly().GetName().Name;
