@@ -306,9 +306,8 @@ namespace Es.Dpo
             }
 
             basename = file.Before("-v");
-            var hash = basename.Hash().ToString();
-            path = _dir + "/" + hash.Substring(0, 2) + "/" + hash.Substring(2, 2) + "/" + hash.Substring(4) +
-                   "/" + basename;
+            var hash = basename.Hash().ToString("x016");
+            path = $"{_dir}/{hash.Substring(0, 2)}/{hash.Substring(2, 2)}/{hash.Substring(4)}/{basename}";
             return Tuple.Create(path, basename);
         }
 

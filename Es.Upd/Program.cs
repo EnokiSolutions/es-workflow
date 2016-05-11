@@ -41,6 +41,7 @@ namespace Es.Upd
             _id = Assembly.GetExecutingAssembly().GetName().Name;
             Console.WriteLine("{0} {1}", _id, BuildInfo.Version);
             var host = Environment.GetEnvironmentVariable("UPD_HOST") ?? "upd.es";
+            var dpohost = Environment.GetEnvironmentVariable("DPO_HOST") ?? "dpo.es";
             var dir = Environment.GetEnvironmentVariable("UPD_DIR") ?? "./upd";
             var key = Environment.GetEnvironmentVariable("UPD_KEY") ?? "ASDF";
 
@@ -50,16 +51,15 @@ namespace Es.Upd
                 host,
                 dir,
                 key,
+                dpohost,
                 s =>
                 {
                     Console.WriteLine($"FATAL ERROR: {_id} {s}");
                     Environment.Exit(-1);
-                },
-                s =>
+                }, s =>
                 {
                     Console.WriteLine($"{_id} {s}");
-                }
-                );
+                });
 
             var updTask = updServer.Run(cts.Token);
             Console.WriteLine("Press Q + ENTER to quit");

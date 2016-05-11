@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,8 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Es.Dpo;
 using Es.ToolsCommon;
-using ICSharpCode.SharpZipLib.Zip;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Es.Upd
@@ -21,6 +20,11 @@ namespace Es.Upd
         private readonly string _dir;
         private readonly string _host;
         private readonly string _key;
+        private readonly string _dpoHost;
+
+        private readonly ConcurrentDictionary<string, ConcurrentBag<JObject>> _metaDataIndex =
+            new ConcurrentDictionary<string, ConcurrentBag<JObject>>(StringComparer.OrdinalIgnoreCase);
+
         private readonly int _numConcurrent = 64;
         private readonly Action<string> _onError;
         private readonly Action<string> _onLog;
@@ -28,15 +32,13 @@ namespace Es.Upd
 
         private CancellationTokenSource _cts;
 
-        private readonly ConcurrentDictionary<string, ConcurrentBag<JObject>> _metaDataIndex =
-            new ConcurrentDictionary<string, ConcurrentBag<JObject>>(StringComparer.OrdinalIgnoreCase);
-
-        public UpdServer(string host, string dir, string key, Action<string> onError, Action<string> onLog = null)
+        public UpdServer(string host, string dir, string key, string dpoHost, Action<string> onError, Action<string> onLog = null)
         {
             _host = host;
             _dir = dir;
             _key = key;
             _onError = onError;
+            _dpoHost = dpoHost;
             _onLog = onLog;
         }
 
@@ -54,7 +56,7 @@ namespace Es.Upd
             //  general structure of installs:
             //     .../installs/name/uuid/...
             //                      /labels.txt (one per line: label:uuid\n)
-            //
+            //     .../downloads/hh/hh.../name
             //  default is the label '_default_'
             //  versions are prefixed with '_v_'
 
@@ -100,28 +102,28 @@ namespace Es.Upd
 
         private void SetupMetaData()
         {
-            foreach (var f in Directory.EnumerateFiles(_dir, "*.exe", SearchOption.AllDirectories))
-            {
-                _onLog?.Invoke($"{f}");
-                var pn = Path.GetFileName(Path.GetDirectoryName(f));
-                if (pn==null)
-                    continue;
+            //foreach (var f in Directory.EnumerateFiles(_dir, "*.exe", SearchOption.AllDirectories))
+            //{
+            //    _onLog?.Invoke($"{f}");
+            //    var pn = Path.GetFileName(Path.GetDirectoryName(f));
+            //    if (pn == null)
+            //        continue;
 
-                var zfn = f.Replace(".meta.json", ".zip");
-                var fn = Path.GetFileName(zfn);
-                if (!File.Exists(zfn))
-                    continue;
+            //    var zfn = f.Replace(".meta.json", ".zip");
+            //    var fn = Path.GetFileName(zfn);
+            //    if (!File.Exists(zfn))
+            //        continue;
 
-                _onLog?.Invoke($"{pn} {zfn}");
-                var md = JObject.Parse(File.ReadAllText(f));
-                md["pak"] = fn;
+            //    _onLog?.Invoke($"{pn} {zfn}");
+            //    var md = JObject.Parse(File.ReadAllText(f));
+            //    md["pak"] = fn;
 
-                foreach (var tag in md.GetValue("tags", new string[] {}))
-                {
-                    _metaDataIndex.GetOrAdd(tag,new ConcurrentBag<JObject>()).Add(md);
-                }
-                _metaDataIndex.GetOrAdd(pn, new ConcurrentBag<JObject>()).Add(md);
-            }
+            //    foreach (var tag in md.GetValue("tags", new string[] {}))
+            //    {
+            //        _metaDataIndex.GetOrAdd(tag, new ConcurrentBag<JObject>()).Add(md);
+            //    }
+            //    _metaDataIndex.GetOrAdd(pn, new ConcurrentBag<JObject>()).Add(md);
+            //}
         }
 
         private void Start(HttpListener hl)
@@ -151,14 +153,19 @@ namespace Es.Upd
                 return;
             }
 
-            if (!pathAndQuery.Contains("?") || !pathAndQuery.Contains($"key={_key}")) 
+            if (!pathAndQuery.Contains("?") || !pathAndQuery.Contains($"key={_key}"))
             {
                 resp.StatusCode = 400;
                 resp.Close();
                 return;
             }
 
-            var args = pathAndQuery.After("?").Split('&').Select(x=>x.Split('=')).Where(x=>x.Length==2).ToDictionary(x=>x[0],x=>x[1]);
+            var args =
+                pathAndQuery.After("?")
+                    .Split('&')
+                    .Select(x => x.Split('='))
+                    .Where(x => x.Length == 2)
+                    .ToDictionary(x => x[0], x => x[1]);
             var cmd = pathAndQuery.After("upd/").Before("?").TrimEnd('/');
 
             switch (cmd)
@@ -166,41 +173,111 @@ namespace Es.Upd
                 case "install":
                     if (!(args.ContainsKey("name") && args.ContainsKey("version")))
                         goto default;
+                    await Install(resp, args);
                     break;
                 case "enable":
                     if (!(args.ContainsKey("name") && args.ContainsKey("version")))
                         goto default;
+                    await Enable(resp, args);
                     break;
                 case "disable":
                     if (!(args.ContainsKey("name") && args.ContainsKey("version")))
                         goto default;
-
+                    await Disable(resp, args);
                     break;
                 case "default":
                     if (!(args.ContainsKey("name") && args.ContainsKey("version")))
                         goto default;
-
+                    await Default(resp, args);
                     break;
                 case "addlabel":
                     if (!(args.ContainsKey("name") && args.ContainsKey("version") && args.ContainsKey("label")))
                         goto default;
+                    await AddLabel(resp, args);
                     break;
                 case "rmlabel":
                     if (!(args.ContainsKey("name") && args.ContainsKey("label")))
                         goto default;
+                    await RmLabel(resp, args);
                     break;
                 case "ls":
+                    await Ls(resp, args);
                     break;
                 case "cfg":
+                    await Cfg(resp, args);
                     break;
                 case "locate":
                     if (!args.ContainsKey("name"))
                         goto default;
+                    await Locate(resp, args);
                     break;
                 default:
                     resp.StatusCode = 400;
                     resp.Close();
                     return;
+            }
+        }
+
+        private async Task Locate(HttpListenerResponse resp, Dictionary<string, string> args)
+        {
+            await Task.Yield();
+            throw new NotImplementedException();
+        }
+
+        private async Task Cfg(HttpListenerResponse resp, Dictionary<string, string> args)
+        {
+            await Task.Yield();
+            throw new NotImplementedException();
+        }
+
+        private async Task Ls(HttpListenerResponse resp, Dictionary<string, string> args)
+        {
+            await Task.Yield();
+            throw new NotImplementedException();
+        }
+
+        private async Task RmLabel(HttpListenerResponse resp, Dictionary<string, string> args)
+        {
+            await Task.Yield();
+            throw new NotImplementedException();
+        }
+
+        private async Task AddLabel(HttpListenerResponse resp, Dictionary<string, string> args)
+        {
+            await Task.Yield();
+            throw new NotImplementedException();
+        }
+
+        private async Task Default(HttpListenerResponse resp, Dictionary<string, string> args)
+        {
+            await Task.Yield();
+            throw new NotImplementedException();
+        }
+
+        private async Task Disable(HttpListenerResponse resp, Dictionary<string, string> args)
+        {
+            await Task.Yield();
+            throw new NotImplementedException();
+        }
+
+        private async Task Enable(HttpListenerResponse resp, Dictionary<string, string> args)
+        {
+            await Task.Yield();
+            throw new NotImplementedException();
+        }
+
+        private async Task Install(HttpListenerResponse resp, Dictionary<string, string> args)
+        {
+            // get package from Dpo.es
+            var name = args["name"];
+            var version = args["version"];
+            var filename = "{name}-{version}.zip";
+            var hash = filename.Hash().ToString("x016");
+            var dir = $"{_dir}/{hash.Substring(0, 2)}/{hash.Substring(2, 2)}/{hash.Substring(4)}/{filename}";
+            var url = $"http://{_dpoHost}/dpo/{filename}";
+            using (var wc = new WebClient())
+            {
+                await wc.DownloadFileTaskAsync(url, dir);
             }
         }
 
