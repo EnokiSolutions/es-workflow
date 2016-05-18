@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Es.Dpo;
 using Es.ToolsCommon;
+using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json.Linq;
 
 namespace Es.Upd
@@ -271,13 +272,51 @@ namespace Es.Upd
             // get package from Dpo.es
             var name = args["name"];
             var version = args["version"];
-            var filename = "{name}-{version}.zip";
+            var filename = $"{name}-{version}.zip";
             var hash = filename.Hash().ToString("x016");
-            var dir = $"{_dir}/{hash.Substring(0, 2)}/{hash.Substring(2, 2)}/{hash.Substring(4)}/{filename}";
+            var path = $"{_dir}/{hash.Substring(0, 2)}/{hash.Substring(2, 2)}/{hash.Substring(4)}";
+            var fullFilename = $"{path}/{filename}";
+            CreateDirectoryRecursive(path);
+
             var url = $"http://{_dpoHost}/dpo/{filename}";
             using (var wc = new WebClient())
             {
-                await wc.DownloadFileTaskAsync(url, dir);
+
+                await wc.DownloadFileTaskAsync(url, fullFilename);
+
+                try
+                {
+                    _onLog($"Install {filename}");
+
+                    using (var zf = new ZipFile(fullFilename))
+                    {
+                        foreach (ZipEntry ze in zf)
+                        {
+                            var zs = zf.GetInputStream(ze);
+                            var fileToWrite = path + "/" + Path.GetFileName(ze.Name);
+                            CreateDirectoryRecursive(Path.GetDirectoryName(fileToWrite));
+                            using (var ofs = new FileStream(fileToWrite, FileMode.CreateNew))
+                            {
+                                await zs.CopyToAsync(ofs);
+                            }
+                            break;
+                        }
+                    }
+
+                    resp.StatusCode = 200;
+                    var respData = Encoding.UTF8.GetBytes("OK");
+                    await resp.OutputStream.WriteAsync(respData, 0, respData.Length, _cts.Token);
+                    resp.Close();
+                }
+                catch (Exception ex)
+                {
+                    _onError($"{ex}");
+                    resp.StatusCode = 500;
+                    var respData = Encoding.UTF8.GetBytes("SERVER ERROR");
+
+                    await resp.OutputStream.WriteAsync(respData, 0, respData.Length, _cts.Token);
+                    resp.Close();
+                }
             }
         }
 

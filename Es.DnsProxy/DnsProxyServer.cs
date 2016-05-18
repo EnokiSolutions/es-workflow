@@ -15,8 +15,8 @@ namespace Es.DnsProxy
 {
     internal sealed class DnsProxyServer
     {
-        private const int NumTasks = 8;
         private const int DnsPort = 53;
+        private const int DnsIamPort = 453;
         private static readonly char[] DotSeparator = {'.'};
         private readonly Dictionary<ulong, CacheEntry> _cacheEntries = new Dictionary<ulong, CacheEntry>();
         private readonly TimeSpan _cacheTimeout = TimeSpan.FromMinutes(5);
@@ -56,8 +56,6 @@ namespace Es.DnsProxy
 
         private void SetupHostsEntries(string[][] hostMaps)
         {
-            var n = 0;
-            var buffer = new byte[512];
 
             foreach (var hostMap in hostMaps)
             {
@@ -70,28 +68,35 @@ namespace Es.DnsProxy
                 var hostname = hostMap[0];
                 var hostip = hostMap[1];
 
-                var ho = new HostOverride();
-
-                var ip = IPAddress.Parse(hostip);
-                var hostBits = hostname.Split(DotSeparator, StringSplitOptions.RemoveEmptyEntries);
-                n = 0;
-                foreach (var bit in hostBits)
-                {
-                    buffer[n++] = (byte) bit.Length;
-                    var utf8Bytes = Encoding.UTF8.GetBytes(bit);
-                    foreach (var b in utf8Bytes)
-                    {
-                        buffer[n++] = b;
-                    }
-                }
-                ho.hostPostfix = buffer.Take(n).ToArray();
-                ho.ipAddr = ip.GetAddressBytes();
+                var ip = IPAddress.Parse(hostip).GetAddressBytes();
+                var ho = CreateHostOverride(hostname, ip);
 
                 _hostOverrides.Add(ho);
 
                 _onLog?.Invoke(
                     $"hostmap for {hostname} {hostip}\n\t{string.Join(" ", ho.hostPostfix.Select(b => b.ToString("X2")))}\n\t{string.Join(" ", ho.ipAddr.Select(b => b.ToString("X2")))}");
             }
+        }
+
+        private static HostOverride CreateHostOverride(string hostname, byte[] ip)
+        {
+            var ho = new HostOverride {hostname = hostname};
+
+            var hostBits = hostname.Split(DotSeparator, StringSplitOptions.RemoveEmptyEntries);
+            var n = 0;
+            var buffer = new byte[512];
+            foreach (var bit in hostBits)
+            {
+                buffer[n++] = (byte) bit.Length;
+                var utf8Bytes = Encoding.UTF8.GetBytes(bit);
+                foreach (var b in utf8Bytes)
+                {
+                    buffer[n++] = b;
+                }
+            }
+            ho.hostPostfix = buffer.Take(n).ToArray();
+            ho.ipAddr = ip;
+            return ho;
         }
 
         public void DumpBuffer(byte[] buffer, int n)
@@ -108,15 +113,34 @@ namespace Es.DnsProxy
         {
             try
             {
-                var s = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.IP);
-                IgnoreConnReset(s);
-                s.Bind(new IPEndPoint(IPAddress.Any, DnsPort));
+                var sIam = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.IP);
+                IgnoreConnReset(sIam);
+                sIam.Bind(new IPEndPoint(IPAddress.Any, DnsIamPort));
 
-                var buffer = new byte[512];
+                var sDns = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.IP);
+                IgnoreConnReset(sDns);
+                sDns.Bind(new IPEndPoint(IPAddress.Any, DnsPort));
+
+                var bufferDns = new byte[512];
+                var bufferIam = new byte[512];
+
+                var rftDns = ReceiveFrom(sDns, bufferDns);
+                var rftIam = ReceiveFrom(sIam, bufferIam);
+
+                var ts = new Task<RecvResult>[2];
+                ts[0] = rftDns;
+                ts[1] = rftIam;
 
                 while (!token.IsCancellationRequested)
                 {
-                    var rf = await ReceiveFrom(s, buffer);
+                    rftDns = ts[0];
+                    rftIam = ts[1];
+
+                    var tr = await Task.WhenAny(ts);
+                    if (tr.IsCanceled)
+                        break;
+
+                    var rf = tr.Result;
 
                     if (rf==null)
                         continue;
@@ -125,17 +149,118 @@ namespace Es.DnsProxy
                     var remoteEp = rf.RemoteEp;
 
                     _onLog($"RecvFrom {remoteEp}");
-                    DumpBuffer(buffer, n);
 
-                    if (remoteEp.Equals(_primaryDnsAddress))
+                    if (tr == rftDns)
                     {
-                        await HandleReplyFromPrimaryDnsServer(buffer, n, s);
+                        DumpBuffer(bufferDns, n);
 
-                        _onLog($"# outstanding {_cacheEntries.Sum(x=>x.Value.Requests.Count)}");
+                        if (remoteEp.Equals(_primaryDnsAddress))
+                        {
+                            await HandleReplyFromPrimaryDnsServer(bufferDns, n, sDns);
+
+                            _onLog($"# outstanding {_cacheEntries.Sum(x=>x.Value.Requests.Count)}");
+                        }
+                        else
+                        {
+                            await HandleRequestFromClient(bufferDns, n, remoteEp, sDns);
+                        }
+                        ts[0] = ReceiveFrom(sDns, bufferDns);
                     }
-                    else
+                    else if (tr == rftIam)
                     {
-                        await HandleRequestFromClient(buffer, n, remoteEp, s);
+                        do
+                        {
+                            DumpBuffer(bufferIam, n);
+                            if (n < 5)
+                            {
+                                _onLog($"IAM {remoteEp} send {n} bytes, too small to parse");
+                                break;
+                            }
+
+                            if (bufferIam[0] != 0)
+                            {
+                                _onLog($"IAM {remoteEp} send unsupported version tag {bufferIam[0]}");
+                                break;
+                            }
+
+                            var cmd = bufferIam[1];
+                            if (cmd == 0 || cmd == 1)
+                            {
+                                byte[] ip = null;
+
+                                if (cmd == 0) // use remoteIp
+                                {
+                                    // register
+                                    var ipEndPoint = remoteEp as IPEndPoint;
+                                    if (ipEndPoint == null)
+                                    {
+                                        _onLog($"IAM {remoteEp} not an ipEndpoint??");
+                                        break;
+                                    }
+                                    ip = ipEndPoint.Address.GetAddressBytes();
+                                    if (ip.Length != 4)
+                                    {
+                                        _onLog($"IAM {remoteEp} not ipv4");
+                                        break;
+                                    }
+                                }
+
+                                var nl = bufferIam[2];
+                                if (nl > n - 3)
+                                {
+                                    _onLog($"IAM {remoteEp} send name length that exceeds packet length");
+                                    break;
+                                }
+                                var hostname = Encoding.ASCII.GetString(bufferIam, 3, nl);
+
+                                if (cmd == 1) // use providedIp
+                                {
+                                    ip = new[]
+                                    {
+                                        bufferIam[3 + nl],
+                                        bufferIam[4 + nl],
+                                        bufferIam[5 + nl],
+                                        bufferIam[6 + nl],
+                                    };
+                                }
+
+                                if (ip == null)
+                                {
+                                    _onLog($"IAM {remoteEp} ip is still null, how?");
+                                    break;
+                                }
+
+                                var toReplase = _hostOverrides.Find(x => x.hostname == hostname);
+                                if (toReplase != null)
+                                {
+                                    toReplase.ipAddr = ip;
+                                }
+                                else
+                                {
+                                    _hostOverrides.Add(CreateHostOverride(hostname, ip));
+                                }
+                                _cacheEntries.Clear();
+
+                                if (cmd == 1)
+                                {
+                                    bufferIam[3 + nl] = ip[0];
+                                    bufferIam[4 + nl] = ip[1];
+                                    bufferIam[5 + nl] = ip[2];
+                                    bufferIam[6 + nl] = ip[3];
+                                    n += 4;
+                                }
+
+                                bufferIam[1] |= 0x80;
+
+                                _onLog(
+                                    $"IAM {remoteEp} set {hostname} to {string.Join(".", ip.Select(x => x.ToString()))}");
+                                await SendTo(sIam, bufferIam, n, remoteEp);
+                                break;
+                            }
+
+                            _onLog($"IAM {remoteEp} send unsupported cmd {cmd}");
+                        } while (false);
+                        ts[1] = ReceiveFrom(sIam, bufferIam);
                     }
                 }
             }
@@ -270,8 +395,8 @@ namespace Es.DnsProxy
                 buffer[n++] = 1; // IN
                 buffer[n++] = 0; // ttl
                 buffer[n++] = 0; // ttl
-                buffer[n++] = 0x0c; // ttl
                 buffer[n++] = 0; // ttl
+                buffer[n++] = 1; // ttl
                 buffer[n++] = 0; // count
                 buffer[n++] = 4; // 4 bytes to follow
                 buffer[n++] = ho.ipAddr[0];
@@ -416,6 +541,7 @@ namespace Es.DnsProxy
 
         private sealed class HostOverride
         {
+            public string hostname;
             public byte[] hostPostfix;
             public byte[] ipAddr;
         }
