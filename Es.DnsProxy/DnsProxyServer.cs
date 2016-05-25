@@ -396,7 +396,7 @@ namespace Es.DnsProxy
                 buffer[n++] = 0; // ttl
                 buffer[n++] = 0; // ttl
                 buffer[n++] = 0; // ttl
-                buffer[n++] = 1; // ttl
+                buffer[n++] = 1; // ttl (super short)
                 buffer[n++] = 0; // count
                 buffer[n++] = 4; // 4 bytes to follow
                 buffer[n++] = ho.ipAddr[0];
